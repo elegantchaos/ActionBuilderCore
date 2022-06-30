@@ -29,8 +29,8 @@ final class ActionBuilderCoreTests: XCTestCase {
             
             """
         
-        let repo = MockRepo([])
         let generator = WorkflowGenerator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+        let repo = MockRepo([])
         
         let output = generator.generateWorkflow(for: repo)!
         XCTAssertEqual(output.source, expected)

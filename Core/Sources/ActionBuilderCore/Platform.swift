@@ -7,6 +7,15 @@ public class Platform: Option {
     let subPlatforms: [Platform]
     let xcodeDestination: String?
     
+    public static let allCases = [
+        Platform("macOS", name: "macOS"),
+        Platform("iOS", name: "iOS", xcodeDestination: "iPhone 11"),
+        Platform("tvOS", name: "tvOS", xcodeDestination: "Apple TV"),
+        Platform("watchOS", name: "watchOS", xcodeDestination: "Apple Watch Series 5 - 44mm"),
+        Platform("linux", name: "Linux"),
+    ]
+    
+
     public init(_ id: String, name: String, xcodeDestination: String? = nil, subPlatforms: [Platform] = []) {
         self.xcodeDestination = xcodeDestination
         self.subPlatforms = subPlatforms
@@ -32,7 +41,7 @@ public class Platform: Option {
         return "\(name) (\(compiler.name))"
     }
 
-    public func yaml(repo: RepoDetails, compilers: [Compiler], configurations: [String]) -> String {
+    public func yaml(repo: RepoDetails, compilers: [Compiler], configurations: [Configuration]) -> String {
         let settings = repo.settings
         let package = repo.name
         let test = settings.test
@@ -84,7 +93,7 @@ public class Platform: Option {
         return yaml
     }
 
-    fileprivate func swiftYAML(configurations: [String], build: Bool, test: Bool, customToolchain: Bool, compiler: Compiler) -> String {
+    fileprivate func swiftYAML(configurations: [Configuration], build: Bool, test: Bool, customToolchain: Bool, compiler: Compiler) -> String {
         var yaml = """
 
                     - name: Swift Version
@@ -94,14 +103,15 @@ public class Platform: Option {
         let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
         if test {
             for config in configurations {
-                let buildForTesting = config == "Release" ? "-Xswiftc -enable-testing" : ""
+                let isRelease = config.id == "release"
+                let buildForTesting = isRelease ? "-Xswiftc -enable-testing" : ""
                 let excludedVersions = ["swift-50", "swift-nightly"]
-                let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == "swift-51") && (config == "Release")) ? "--enable-test-discovery" : ""
+                let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == "swift-51") && isRelease) ? "--enable-test-discovery" : ""
                 yaml.append(
                     """
                     
                             - name: Test (\(config))
-                              run: \(pathFix)swift test --configuration \(config.lowercased()) \(buildForTesting) \(discovery)
+                              run: \(pathFix)swift test --configuration \(config.id) \(buildForTesting) \(discovery)
                     """
                 )
             }
@@ -111,7 +121,7 @@ public class Platform: Option {
                     """
                         
                                 - name: Build (\(config))
-                                  run: \(pathFix)swift build -c \(config.lowercased())
+                                  run: \(pathFix)swift build -c \(config.id)
                         """
                 )
             }
@@ -132,7 +142,7 @@ public class Platform: Option {
         return yaml
     }
 
-    fileprivate func xcodebuildYAML(configurations: [String], package: String, build: Bool, test: Bool, compiler: Compiler) -> String {
+    fileprivate func xcodebuildYAML(configurations: [Configuration], package: String, build: Bool, test: Bool, compiler: Compiler) -> String {
         var yaml = ""
         let destinationName = xcodeDestination ?? ""
         let destination = destinationName.isEmpty ? "" : "-destination \"name=\(destinationName)\""
@@ -161,21 +171,21 @@ public class Platform: Option {
         
         if test && compiler.supportsTesting(on: id) {
             for config in configurations {
-                let extraArgs = config == "Release" ? "ENABLE_TESTABILITY=YES" : ""
+                let extraArgs = config.isRelease ? "ENABLE_TESTABILITY=YES" : ""
                 yaml.append(
                     """
                     
-                            - name: Test (\(name) \(config))
+                            - name: Test (\(name) \(config.name))
                               run: |
                                 source "setup.sh"
                                 echo "Testing workspace $WORKSPACE scheme $SCHEME."
-                                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config.lowercased()).log | xcpretty
+                                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config.id).log | xcpretty
                     """
                 )
             }
         } else {
             for config in configurations {
-                let extraArgs = config == "Release" ? "ENABLE_TESTABILITY=YES" : ""
+                let extraArgs = config.isRelease ? "ENABLE_TESTABILITY=YES" : ""
                 yaml.append(
                     """
                     
@@ -183,7 +193,7 @@ public class Platform: Option {
                               run: |
                                 source "setup.sh"
                                 echo "Building workspace $WORKSPACE scheme $SCHEME."
-                                xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config.lowercased()).log | xcpretty
+                                xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config.id).log | xcpretty
                     """
                 )
             }

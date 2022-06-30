@@ -14,17 +14,6 @@ public protocol RepoDetails {
     var workflow: String { get }
 }
 
-@dynamicMemberLookup public struct WorkflowSettings: Codable, Equatable {
-    public var options: [String] = []
-    
-    public subscript(dynamicMember option: String) -> Bool {
-        return options.contains(option)
-    }
-    
-    public init(options: [String] = []) {
-        self.options = options
-    }
-}
 //
 //
 //private extension URL {
