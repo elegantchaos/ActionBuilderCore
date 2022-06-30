@@ -1,8 +1,12 @@
-//
-//  File.swift
-//  
-//
-//  Created by Sam Deane on 30/06/2022.
-//
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+//  Created by Sam Deane on 30/06/22.
+//  All code (c) 2022 - present day, Elegant Chaos Limited.
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
+
+@main struct ActionBuilderTool {
+    func main() {
+        
+    }
+}
