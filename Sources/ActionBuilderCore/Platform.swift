@@ -91,11 +91,11 @@ public class Platform: Identifiable {
                 }
             }
             
-            if settings.upload {
+            if settings.uploadLogs {
                 uploadYAML(&job)
             }
             
-            if settings.notify {
+            if settings.postSlackNotification {
                 job.append(notifyYAML(compiler: compiler))
             }
             
