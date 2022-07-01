@@ -11,13 +11,13 @@ public class Compiler: Identifiable {
         case toolchain(version: String, branch: String, image: String = "macos-latest")
     }
     
-    public let id: Version
+    public let id: ID
     let name: String
     let short: String
     let linux: String
     let mac: XcodeMode
     
-    public init(_ id: Version, name: String, short: String, linux: String, mac: XcodeMode) {
+    public init(_ id: ID, name: String, short: String, linux: String, mac: XcodeMode) {
         self.id = id
         self.name = name
         self.short = short
@@ -39,7 +39,7 @@ public class Compiler: Identifiable {
         return true
     }
     
-    public enum Version: String, Equatable, CaseIterable {
+    public enum ID: String, Equatable, CaseIterable, Codable {
         case swift50
         case swift51
         case swift52

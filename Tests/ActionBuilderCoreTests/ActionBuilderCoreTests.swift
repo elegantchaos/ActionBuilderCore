@@ -9,8 +9,8 @@ struct MockRepo: Repo {
     let workflow = "Tests"
     var settings: ActionBuilderCore.Settings
 
-    init(_ options: [String]) {
-        settings = Settings(options: options)
+    init(_ settings: Settings) {
+        self.settings = settings
     }
     
 }
@@ -53,6 +53,8 @@ final class ActionBuilderCoreTests: XCTestCase {
                         xcrun swift --version
                     - name: Swift Version
                       run: swift --version
+                    - name: Test (release)
+                      run: export PATH="swift-latest:$PATH"; swift test --configuration release -Xswiftc -enable-testing --enable-test-discovery
                     - name: Upload Logs
                       uses: actions/upload-artifact@v1
                       if: always()
@@ -63,7 +65,7 @@ final class ActionBuilderCoreTests: XCTestCase {
             """
         
         let generator = Generator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-        let repo = MockRepo(["macOS", Compiler.Version.swift56.rawValue])
+        let repo = MockRepo(.init(platforms: [.macOS], compilers: [.swift56]))
         
         let source = generator.workflow(for: repo)
         XCTAssertEqual(source, expected)
@@ -123,18 +125,22 @@ final class ActionBuilderCoreTests: XCTestCase {
                         SCHEME="testRepo-iOS"
                         fi
                         echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
+                    - name: Build (iOS release)
+                      run: |
+                        source "setup.sh"
+                        echo "Building workspace $WORKSPACE scheme $SCHEME."
+                        xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone 11" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-build-release.log | xcpretty
                     - name: Upload Logs
                       uses: actions/upload-artifact@v1
                       if: always()
                       with:
                         name: logs
                         path: logs
-
             
             """
         
         let generator = Generator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-        let repo = MockRepo(["iOS", Compiler.Version.swift56.rawValue])
+        let repo = MockRepo(.init(platforms: [.iOS], compilers: [.swift56]))
         
         let source = generator.workflow(for: repo)
         XCTAssertEqual(source, expected)

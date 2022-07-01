@@ -5,20 +5,15 @@
 
 import Foundation
 
-public struct Configuration {
-    let id: String
-    let name: String
-    
-    public static let allCases = [
-        Configuration(id: "debug", name: "Debug"),
-        Configuration(id: "release", name: "Release")
-    ]
-    
-    public var isRelease: Bool {
-        id == "release"
+public enum Configuration: String, Codable, CaseIterable {
+    case debug
+    case release
+
+    public var name: String {
+        return rawValue.capitalized
     }
     
     public var xcodeID: String {
-        return name
+        return rawValue.capitalized
     }
 }

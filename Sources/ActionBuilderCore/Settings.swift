@@ -7,10 +7,14 @@ import Foundation
 
 public struct Settings: Codable, Equatable {
     
-    public var options: [String] = []
+    public var platforms: [Platform.ID]
+    public var compilers: [Compiler.ID]
+    public var configurations: [Configuration]
     
-    public init(options: [String] = [], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
-        self.options = options
+    public init(platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
+        self.platforms = platforms
+        self.compilers = compilers
+        self.configurations = configurations
         self.test = test
         self.firstlast = firstlast
         self.notify = notify
@@ -19,15 +23,15 @@ public struct Settings: Codable, Equatable {
     }
     
     var enabledPlatforms: [Platform] {
-        return Platform.platforms.filter { options.contains($0.id.rawValue) }
+        return Platform.platforms.filter { platforms.contains($0.id) }
     }
 
     var enabledCompilers: [Compiler] {
-        return Compiler.compilers.filter { options.contains($0.id.rawValue) }
+        return Compiler.compilers.filter { compilers.contains($0.id) }
     }
     
     var enabledConfigs: [Configuration] {
-        return Configuration.allCases.filter { options.contains($0.id) }
+        return Configuration.allCases.filter { configurations.contains($0) }
     }
 
     var compilersToTest: [Compiler] {

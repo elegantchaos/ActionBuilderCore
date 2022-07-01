@@ -9,7 +9,7 @@ public class Platform: Identifiable {
     public let subPlatforms: [Platform]
     public let xcodeDestination: String?
     
-    public enum ID: String {
+    public enum ID: String, Codable {
         case macOS
         case iOS
         case tvOS
@@ -115,15 +115,15 @@ public class Platform: Identifiable {
         let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
         if test {
             for config in configurations {
-                let isRelease = config.id == "release"
+                let isRelease = config == .release
                 let buildForTesting = isRelease ? "-Xswiftc -enable-testing" : ""
-                let excludedVersions: [Compiler.Version] = [.swift50, .swiftNightly]
+                let excludedVersions: [Compiler.ID] = [.swift50, .swiftNightly]
                 let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == .swift51) && isRelease) ? "--enable-test-discovery" : ""
                 yaml.append(
                     """
                     
                             - name: Test (\(config))
-                              run: \(pathFix)swift test --configuration \(config.id) \(buildForTesting) \(discovery)
+                              run: \(pathFix)swift test --configuration \(config) \(buildForTesting) \(discovery)
                     """
                 )
             }
@@ -133,7 +133,7 @@ public class Platform: Identifiable {
                     """
                         
                                 - name: Build (\(config))
-                                  run: \(pathFix)swift build -c \(config.id)
+                                  run: \(pathFix)swift build -c \(config)
                         """
                 )
             }
@@ -183,7 +183,7 @@ public class Platform: Identifiable {
         
         if test && compiler.supportsTesting(on: id) {
             for config in configurations {
-                let extraArgs = config.isRelease ? "ENABLE_TESTABILITY=YES" : ""
+                let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
                 yaml.append(
                     """
                     
@@ -191,13 +191,13 @@ public class Platform: Identifiable {
                               run: |
                                 source "setup.sh"
                                 echo "Testing workspace $WORKSPACE scheme $SCHEME."
-                                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config.id).log | xcpretty
+                                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcpretty
                     """
                 )
             }
         } else {
             for config in configurations {
-                let extraArgs = config.isRelease ? "ENABLE_TESTABILITY=YES" : ""
+                let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
                 yaml.append(
                     """
                     
@@ -205,7 +205,7 @@ public class Platform: Identifiable {
                               run: |
                                 source "setup.sh"
                                 echo "Building workspace $WORKSPACE scheme $SCHEME."
-                                xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config.id).log | xcpretty
+                                xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcpretty
                     """
                 )
             }
