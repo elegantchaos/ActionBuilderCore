@@ -19,7 +19,7 @@ public struct Settings: Codable, Equatable {
     }
     
     var enabledPlatforms: [Platform] {
-        return Platform.allCases.filter { options.contains($0.id) }
+        return Platform.platforms.filter { options.contains($0.id.rawValue) }
     }
 
     var enabledCompilers: [Compiler] {

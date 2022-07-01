@@ -3,26 +3,39 @@
 //  All code (c) 2020 - present day, Elegant Chaos Limited.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-public class Platform: Option {
-    let subPlatforms: [Platform]
-    let xcodeDestination: String?
+public class Platform: Identifiable {
+    public let id: ID
+    public let name: String
+    public let subPlatforms: [Platform]
+    public let xcodeDestination: String?
     
-    public static let allCases = [
-        Platform("macOS", name: "macOS"),
-        Platform("iOS", name: "iOS", xcodeDestination: "iPhone 11"),
-        Platform("tvOS", name: "tvOS", xcodeDestination: "Apple TV"),
-        Platform("watchOS", name: "watchOS", xcodeDestination: "Apple Watch Series 5 - 44mm"),
-        Platform("linux", name: "Linux"),
+    public enum ID: String {
+        case macOS
+        case iOS
+        case tvOS
+        case watchOS
+        case catalyst
+        case linux
+        case xcode
+    }
+    
+    public static let platforms = [
+        Platform(.macOS, name: "macOS"),
+        Platform(.iOS, name: "iOS", xcodeDestination: "iPhone 11"),
+        Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV"),
+        Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 5 - 44mm"),
+        Platform(.linux, name: "Linux"),
     ]
     
 
-    public init(_ id: String, name: String, xcodeDestination: String? = nil, subPlatforms: [Platform] = []) {
+    public init(_ id: ID, name: String, xcodeDestination: String? = nil, subPlatforms: [Platform] = []) {
+        self.id = id
+        self.name = name
         self.xcodeDestination = xcodeDestination
         self.subPlatforms = subPlatforms
-        super.init(id, name: name)
     }
 
-    public override var label: String {
+    public var label: String {
         if xcodeDestination == nil {
             return name
         } else {
@@ -294,7 +307,7 @@ public class Platform: Option {
 
     fileprivate func containerYAML(_ yaml: inout String, _ compiler: Compiler, _ xcodeToolchain: inout String?, _ xcodeVersion: inout String?) {
         switch id {
-            case "linux":
+            case .linux:
                 yaml.append(
                     """
                     

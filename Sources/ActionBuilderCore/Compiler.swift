@@ -25,14 +25,14 @@ public class Compiler: Identifiable {
         self.mac = mac
     }
     
-    func supportsTesting(on device: String) -> Bool {
+    func supportsTesting(on platform: Platform.ID) -> Bool {
         // no Xcode version supports watchOS testing
-        if device == "watchOS" {
+        if platform == .watchOS {
             return false
         }
 
         // macOS toolchain builds can't support testing on iOS/tvOS as they don't include the simulator
-        if device != "macOS", case .toolchain = mac {
+        if platform != .macOS, case .toolchain = mac {
             return false
         }
         
