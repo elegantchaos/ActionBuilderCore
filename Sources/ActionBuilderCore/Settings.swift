@@ -5,15 +5,17 @@
 
 import Foundation
 
-@dynamicMemberLookup public struct WorkflowSettings: Codable, Equatable {
+public struct Settings: Codable, Equatable {
+    
     public var options: [String] = []
     
-    public subscript(dynamicMember option: String) -> Bool {
-        return options.contains(option)
-    }
-    
-    public init(options: [String] = []) {
+    public init(options: [String] = [], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
         self.options = options
+        self.test = test
+        self.firstlast = firstlast
+        self.notify = notify
+        self.upload = upload
+        self.header = header
     }
     
     var enabledPlatforms: [Platform] {
@@ -28,5 +30,9 @@ import Foundation
         return Configuration.allCases.filter { options.contains($0.id) }
     }
 
-
+    let test: Bool
+    let firstlast: Bool
+    let notify: Bool
+    let upload: Bool
+    let header: Bool
 }

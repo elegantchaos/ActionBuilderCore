@@ -5,7 +5,7 @@
 
 import Foundation
 
-public class WorkflowGenerator {
+public class Generator {
     let name: String
     let version: String
     let link: String
@@ -17,41 +17,15 @@ public class WorkflowGenerator {
     }
     
     public struct Output {
-        public let repo: RepoDetails
+        public let repo: Repo
         public let source: String
         public let data: Data
         public let header: String
         public let delimiter: String
     }
-
-    public let general = [
-        Option("test", name: "Run Tests"),
-        Option("firstlast", name: "Check Oldest and Newest Swift Only"),
-        Option("notify", name: "Post Notifications"),
-        Option("upload", name: "Upload Logs"),
-        Option("header", name: "Add a header to README.md")
-    ]
     
     
-    public func toggleSet(for options: [Option], in settings: WorkflowSettings) -> [Bool] {
-        var toggles: [Bool] = []
-        for option in options {
-            toggles.append(settings.options.contains(option.id))
-        }
-        return toggles
-    }
-    
-    public func enabledIdentifiers(for options: [Option], toggleSet toggles: [Bool]) -> [String] {
-        var identifiers: [String] = []
-        for n in 0 ..< options.count {
-            if toggles[n] {
-                identifiers.append(options[n].id)
-            }
-        }
-        return identifiers
-    }
-    
-    func generateYAML(for repo: RepoDetails, platforms: [Platform], compilers: [Compiler]) -> String {
+    func YAML(for repo: Repo, platforms: [Platform], compilers: [Compiler]) -> String {
         
         var source =
          """
@@ -87,7 +61,7 @@ public class WorkflowGenerator {
         return source
     }
      
-     func generateHeader(for repo: RepoDetails, platforms: [Platform], compilers: [Compiler]) -> (String, String) {
+     func header(for repo: Repo, platforms: [Platform], compilers: [Compiler]) -> (String, String) {
          var header = ""
          let headerDelimiter = "[comment]: <> (End of \(name) Header)\n\n"
          if repo.settings.header {
@@ -117,7 +91,7 @@ public class WorkflowGenerator {
          return (header, headerDelimiter)
      }
 
-    public func generateWorkflow(for repo: RepoDetails) -> Output? {
+    public func workflow(for repo: Repo) -> Output? {
         let supportedCompilers = repo.settings.enabledCompilers
         var compilersToTest = supportedCompilers
         if repo.settings.options.contains("firstlast") && (supportedCompilers.count > 0) {
@@ -130,8 +104,8 @@ public class WorkflowGenerator {
         
         let platforms = repo.settings.enabledPlatforms
 
-        let source = generateYAML(for: repo, platforms: platforms, compilers: compilersToTest)
-        let (header, delimiter) = generateHeader(for: repo, platforms: platforms, compilers: supportedCompilers)
+        let source = YAML(for: repo, platforms: platforms, compilers: compilersToTest)
+        let (header, delimiter) = header(for: repo, platforms: platforms, compilers: supportedCompilers)
         
         guard let data = source.data(using: .utf8) else { return nil }
         return Output(repo: repo, source: source, data: data, header: header, delimiter: delimiter)

@@ -41,11 +41,10 @@ public class Platform: Option {
         return "\(name) (\(compiler.name))"
     }
 
-    public func yaml(repo: RepoDetails, compilers: [Compiler], configurations: [Configuration]) -> String {
+    public func yaml(repo: Repo, compilers: [Compiler], configurations: [Configuration]) -> String {
         let settings = repo.settings
         let package = repo.name
         let test = settings.test
-        let build = settings.build
         
         var yaml = ""
         var xcodeToolchain: String? = nil
@@ -71,11 +70,11 @@ public class Platform: Option {
             }
             
             if subPlatforms.isEmpty {
-                job.append(swiftYAML(configurations: configurations, build: build, test: test, customToolchain: xcodeToolchain != nil, compiler: compiler))
+                job.append(swiftYAML(configurations: configurations, test: test, customToolchain: xcodeToolchain != nil, compiler: compiler))
             } else {
                 job.append(xcodebuildCommonYAML())
                 for platform in subPlatforms {
-                    job.append(platform.xcodebuildYAML(configurations: configurations, package: package, build: build, test: test, compiler: compiler))
+                    job.append(platform.xcodebuildYAML(configurations: configurations, package: package, test: test, compiler: compiler))
                 }
             }
             
@@ -93,7 +92,7 @@ public class Platform: Option {
         return yaml
     }
 
-    fileprivate func swiftYAML(configurations: [Configuration], build: Bool, test: Bool, customToolchain: Bool, compiler: Compiler) -> String {
+    fileprivate func swiftYAML(configurations: [Configuration], test: Bool, customToolchain: Bool, compiler: Compiler) -> String {
         var yaml = """
 
                     - name: Swift Version
@@ -142,7 +141,7 @@ public class Platform: Option {
         return yaml
     }
 
-    fileprivate func xcodebuildYAML(configurations: [Configuration], package: String, build: Bool, test: Bool, compiler: Compiler) -> String {
+    fileprivate func xcodebuildYAML(configurations: [Configuration], package: String, test: Bool, compiler: Compiler) -> String {
         var yaml = ""
         let destinationName = xcodeDestination ?? ""
         let destination = destinationName.isEmpty ? "" : "-destination \"name=\(destinationName)\""

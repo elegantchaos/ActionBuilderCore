@@ -1,14 +1,14 @@
 import XCTest
 @testable import ActionBuilderCore
 
-struct MockRepo: RepoDetails {
+struct MockRepo: Repo {
     let owner = "testOwner"
     let name = "testRepo"
     let workflow = "Tests"
-    var settings: ActionBuilderCore.WorkflowSettings
+    var settings: ActionBuilderCore.Settings
 
     init(_ options: [String]) {
-        settings = WorkflowSettings(options: options)
+        settings = Settings(options: options)
     }
     
 }
@@ -29,10 +29,11 @@ final class ActionBuilderCoreTests: XCTestCase {
             
             """
         
-        let generator = WorkflowGenerator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+        let generator = Generator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
         let repo = MockRepo([])
         
-        let output = generator.generateWorkflow(for: repo)!
+        let output = generator.workflow(for: repo)!
         XCTAssertEqual(output.source, expected)
     }
+    
 }
