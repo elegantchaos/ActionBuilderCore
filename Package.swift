@@ -18,6 +18,7 @@ let package = Package(
     ],
 
     dependencies: [
+        .package(url: "https://github.com/elegantchaos/XCTestExtensions", from: "1.4.7")
     ],
 
     targets: [
@@ -30,7 +31,8 @@ let package = Package(
         .testTarget(
             name: "ActionBuilderCoreTests",
             dependencies: [
-                "ActionBuilderCore"
+                "ActionBuilderCore",
+                "XCTestExtensions"
             ]
         ),
     ]

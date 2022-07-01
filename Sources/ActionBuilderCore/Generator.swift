@@ -16,17 +16,11 @@ public class Generator {
         self.link = link
     }
     
-    public struct Output {
-        public let repo: Repo
-        public let source: String
-        public let data: Data
-        public let header: String
-        public let delimiter: String
-    }
-    
-    
-    func YAML(for repo: Repo, platforms: [Platform], compilers: [Compiler]) -> String {
-        
+    /// Returns the content of a Workflow.yml file for the given repo.
+    func workflow(for repo: Repo) -> String {
+        let compilers = repo.settings.compilersToTest
+        let platforms = repo.settings.enabledPlatforms
+
         var source =
          """
          # --------------------------------------------------------------------------------
@@ -61,7 +55,11 @@ public class Generator {
         return source
     }
      
-     func header(for repo: Repo, platforms: [Platform], compilers: [Compiler]) -> (String, String) {
+    /// Generates text to use for a README.md header for the given repo.
+     func header(for repo: Repo) -> (String, String) {
+         let platforms = repo.settings.enabledPlatforms
+         let compilers = repo.settings.enabledCompilers
+
          var header = ""
          let headerDelimiter = "[comment]: <> (End of \(name) Header)\n\n"
          if repo.settings.header {
@@ -90,25 +88,4 @@ public class Generator {
          
          return (header, headerDelimiter)
      }
-
-    public func workflow(for repo: Repo) -> Output? {
-        let supportedCompilers = repo.settings.enabledCompilers
-        var compilersToTest = supportedCompilers
-        if repo.settings.options.contains("firstlast") && (supportedCompilers.count > 0) {
-            compilersToTest = [supportedCompilers.first!]
-            let last = supportedCompilers.last!
-            if !compilersToTest.contains(last) {
-                compilersToTest.append(last)
-            }
-        }
-        
-        let platforms = repo.settings.enabledPlatforms
-
-        let source = YAML(for: repo, platforms: platforms, compilers: compilersToTest)
-        let (header, delimiter) = header(for: repo, platforms: platforms, compilers: supportedCompilers)
-        
-        guard let data = source.data(using: .utf8) else { return nil }
-        return Output(repo: repo, source: source, data: data, header: header, delimiter: delimiter)
-    }
-    
 }

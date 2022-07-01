@@ -1,0 +1,23 @@
+{
+  "pins" : [
+    {
+      "identity" : "matchable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/Matchable.git",
+      "state" : {
+        "revision" : "0f523c77bf4b0dbbdc0838b952262ed45fab17f8",
+        "version" : "1.0.6"
+      }
+    },
+    {
+      "identity" : "xctestextensions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/XCTestExtensions",
+      "state" : {
+        "revision" : "cb054eb122b7c8ed5b3dbbcb711c274b0d868f77",
+        "version" : "1.4.7"
+      }
+    }
+  ],
+  "version" : 2
+}

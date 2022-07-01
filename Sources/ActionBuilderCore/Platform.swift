@@ -104,8 +104,8 @@ public class Platform: Option {
             for config in configurations {
                 let isRelease = config.id == "release"
                 let buildForTesting = isRelease ? "-Xswiftc -enable-testing" : ""
-                let excludedVersions = ["swift-50", "swift-nightly"]
-                let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == "swift-51") && isRelease) ? "--enable-test-discovery" : ""
+                let excludedVersions: [Compiler.Version] = [.swift50, .swiftNightly]
+                let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == .swift51) && isRelease) ? "--enable-test-discovery" : ""
                 yaml.append(
                     """
                     

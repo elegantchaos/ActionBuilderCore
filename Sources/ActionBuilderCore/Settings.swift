@@ -23,13 +23,28 @@ public struct Settings: Codable, Equatable {
     }
 
     var enabledCompilers: [Compiler] {
-        return Compiler.allCases.filter { options.contains($0.id) }
+        return Compiler.compilers.filter { options.contains($0.id.rawValue) }
     }
     
     var enabledConfigs: [Configuration] {
         return Configuration.allCases.filter { options.contains($0.id) }
     }
 
+    var compilersToTest: [Compiler] {
+        let supportedCompilers = enabledCompilers
+        if firstlast && (supportedCompilers.count > 0) {
+            let first = supportedCompilers.first!
+            let last = supportedCompilers.last!
+            if first.id != last.id {
+                return [first, last]
+            } else {
+                return [first]
+            }
+        } else {
+            return supportedCompilers
+        }
+    }
+    
     let test: Bool
     let firstlast: Bool
     let notify: Bool
