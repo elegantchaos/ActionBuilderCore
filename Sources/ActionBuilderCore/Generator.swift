@@ -17,7 +17,7 @@ public class Generator {
     }
     
     /// Returns the content of a Workflow.yml file for the given repo.
-    func workflow(for repo: Repo) -> String {
+    public func workflow(for repo: Repo) -> String {
         let compilers = repo.compilersToTest
         let platforms = repo.enabledPlatforms
 
@@ -56,7 +56,7 @@ public class Generator {
     }
      
     /// Generates text to use for a README.md header for the given repo.
-     func header(for repo: Repo) -> (String, String) {
+     public func header(for repo: Repo) -> (String, String) {
          let platforms = repo.enabledPlatforms
          let compilers = repo.enabledCompilers
 

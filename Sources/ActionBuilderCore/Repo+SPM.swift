@@ -9,7 +9,7 @@ import SemanticVersion
 extension Repo {
 
     /// Initialise from an SPM package directory
-    init(forPackage url: URL) throws {
+    public init(forPackage url: URL) throws {
         
         // use the settings file at the root of the directory to
         // configure the repo (if it exists)

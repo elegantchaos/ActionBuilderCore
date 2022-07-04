@@ -8,10 +8,16 @@ import Foundation
 
 @main struct ActionBuilderPlugin {
     static func main() throws {
-        let url = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
+        let args = ProcessInfo.processInfo.arguments
+        guard args.count == 2 else {
+            fatalError("Usage: \(args[0]) <package>")
+        }
+                       
+        let url = URL(fileURLWithPath: args[1])
         let repo = try Repo(forPackage: url)
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
-        
-//        generator.workflow(for: Repo())
+        let source = generator.workflow(for: repo)
+        let sourceURL = url.appendingPathComponent(".github/workflows/\(repo.workflow).yml")
+        try source.data(using: .utf8)?.write(to: sourceURL)
     }
 }
