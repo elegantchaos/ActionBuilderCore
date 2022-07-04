@@ -3,45 +3,31 @@ import XCTestExtensions
 
 @testable import ActionBuilderCore
 
-struct MockRepo: Repo {
-    let owner = "testOwner"
-    let name = "testRepo"
-    let workflow = "Tests"
-    var settings: ActionBuilderCore.Settings
-
-    init(_ settings: Settings) {
-        self.settings = settings
-    }
-    
-}
-
 final class ActionBuilderCoreTests: XCTestCase {
     func testParsingPackageMacPlatform() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
-        let settings = try Settings(forPackage: examplePackage)
-        XCTAssertEqual(settings.compilers, [.swift56])
-        XCTAssertEqual(settings.platforms, [.macOS])
-        print(settings)
+        let repo = try Repo(forPackage: examplePackage)
+        XCTAssertEqual(repo.compilers, [.swift56])
+        XCTAssertEqual(repo.platforms, [.macOS])
     }
 
     func testParsingPackageMultiPlatform() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-multi", withExtension: "package")!
-        let settings = try Settings(forPackage: examplePackage)
-        XCTAssertEqual(settings.compilers, [.swift56])
-        XCTAssertEqual(settings.platforms, [.iOS, .macOS, .tvOS])
-        print(settings)
+        let repo = try Repo(forPackage: examplePackage)
+        XCTAssertEqual(repo.compilers, [.swift56])
+        XCTAssertEqual(repo.platforms, [.iOS, .macOS, .tvOS])
     }
 
     func testParsingPackageConfigFile() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-config", withExtension: "package")!
-        let settings = try Settings(forPackage: examplePackage)
-        XCTAssertEqual(settings.compilers, [.swift55, .swiftNightly])
-        XCTAssertEqual(settings.platforms, [.macOS, .linux])
-        XCTAssertTrue(settings.test)
-        XCTAssertFalse(settings.header)
-        XCTAssertFalse(settings.uploadLogs)
-        XCTAssertFalse(settings.postSlackNotification)
-        XCTAssertFalse(settings.firstlast)
+        let repo = try Repo(forPackage: examplePackage)
+        XCTAssertEqual(repo.compilers, [.swift55, .swiftNightly])
+        XCTAssertEqual(repo.platforms, [.macOS, .linux])
+        XCTAssertTrue(repo.test)
+        XCTAssertFalse(repo.header)
+        XCTAssertFalse(repo.uploadLogs)
+        XCTAssertFalse(repo.postSlackNotification)
+        XCTAssertFalse(repo.firstlast)
     }
 
     func testYAMLmacOSSwift56() {
@@ -93,7 +79,7 @@ final class ActionBuilderCoreTests: XCTestCase {
             """
         
         let generator = Generator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-        let repo = MockRepo(.init(platforms: [.macOS], compilers: [.swift56]))
+        let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.macOS], compilers: [.swift56])
         
         let source = generator.workflow(for: repo)
         XCTAssertEqual(source, expected)
@@ -168,7 +154,7 @@ final class ActionBuilderCoreTests: XCTestCase {
             """
         
         let generator = Generator(name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-        let repo = MockRepo(.init(platforms: [.iOS], compilers: [.swift56]))
+        let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS], compilers: [.swift56])
         
         let source = generator.workflow(for: repo)
         XCTAssertEqual(source, expected)

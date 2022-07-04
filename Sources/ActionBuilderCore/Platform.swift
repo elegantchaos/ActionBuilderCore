@@ -56,9 +56,8 @@ public class Platform: Identifiable {
     }
 
     public func yaml(repo: Repo, compilers: [Compiler], configurations: [Configuration]) -> String {
-        let settings = repo.settings
         let package = repo.name
-        let test = settings.test
+        let test = repo.test
         
         var yaml = ""
         var xcodeToolchain: String? = nil
@@ -92,11 +91,11 @@ public class Platform: Identifiable {
                 }
             }
             
-            if settings.uploadLogs {
+            if repo.uploadLogs {
                 uploadYAML(&job)
             }
             
-            if settings.postSlackNotification {
+            if repo.postSlackNotification {
                 job.append(notifyYAML(compiler: compiler))
             }
             

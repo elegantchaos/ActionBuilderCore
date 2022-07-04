@@ -18,8 +18,8 @@ public class Generator {
     
     /// Returns the content of a Workflow.yml file for the given repo.
     func workflow(for repo: Repo) -> String {
-        let compilers = repo.settings.compilersToTest
-        let platforms = repo.settings.enabledPlatforms
+        let compilers = repo.compilersToTest
+        let platforms = repo.enabledPlatforms
 
         var source =
          """
@@ -37,7 +37,7 @@ public class Generator {
          """
          
         var xcodePlatforms: [Platform] = []
-        let configurations = repo.settings.enabledConfigs
+        let configurations = repo.enabledConfigs
         for platform in platforms {
             if platform.xcodeDestination == nil {
                 source.append(platform.yaml(repo: repo, compilers: compilers, configurations: configurations))
@@ -57,12 +57,12 @@ public class Generator {
      
     /// Generates text to use for a README.md header for the given repo.
      func header(for repo: Repo) -> (String, String) {
-         let platforms = repo.settings.enabledPlatforms
-         let compilers = repo.settings.enabledCompilers
+         let platforms = repo.enabledPlatforms
+         let compilers = repo.enabledCompilers
 
          var header = ""
          let headerDelimiter = "[comment]: <> (End of \(name) Header)\n\n"
-         if repo.settings.header {
+         if repo.header {
              let platformNames = platforms.map({ $0.name }).joined(separator: ", ")
              let platformIDs = platforms.map({ $0.name })
              let swiftBadges = compilers.map({ "![swift \($0.short) shield]" }).joined(separator: " ")

@@ -8,6 +8,7 @@ import Runner
 
 /// Some minimal Swift Package Manager package information.
 struct PackageInfo: Codable {
+    let name: String
     let toolsVersion: ToolsVersion
     let platforms: [PlatformInfo]
     
@@ -15,11 +16,13 @@ struct PackageInfo: Codable {
         let spm = Runner(command: "swift", cwd: url)
         let output = try spm.sync(arguments: ["package", "dump-package"])
         guard output.status == 0 else {
-            throw SettingsError.parsingFailed
+            throw Error.parsingFailed
         }
         
+        print(output.stdout)
+        
         guard let jsonData = output.stdout.data(using: .utf8) else {
-            throw SettingsError.corruptData
+            throw Error.corruptData
         }
         
         let decoder = JSONDecoder()
@@ -34,4 +37,10 @@ struct PackageInfo: Codable {
         let platformName: String
         let version: String
     }
+    
+    enum Error: Swift.Error {
+        case parsingFailed
+        case corruptData
+    }
+
 }

@@ -19,7 +19,14 @@ let package = Package(
             name: "ActionBuilderCore",
             targets: ["ActionBuilderCore"]
         ),
-        
+
+        .executable(
+            name: "ActionBuilderTool",
+            targets: [
+                "ActionBuilderTool"
+            ]
+        ),
+
     ],
 
     dependencies: [
@@ -31,18 +38,28 @@ let package = Package(
     targets: [
         .target(
             name: "ActionBuilderCore",
+            
             dependencies: [
                 "Runner",
                 "SemanticVersion"
             ]
         ),
 
+            .executableTarget(
+                name: "ActionBuilderTool",
+                dependencies: [
+                    "ActionBuilderCore"
+                ]
+            ),
+
         .testTarget(
             name: "ActionBuilderCoreTests",
+            
             dependencies: [
                 "ActionBuilderCore",
                 "XCTestExtensions"
             ],
+            
             resources: [
                 .copy("Resources/Example-config.package"),
                 .copy("Resources/Example-mac.package"),
