@@ -8,7 +8,7 @@ import Foundation
 extension Settings {
     
     /// Initialise from a JSON configuration file.
-    init(forConfig url: URL) throws {
+    public init(forConfig url: URL) throws {
         let decoder = JSONDecoder()
         let data = try Data(contentsOf: url)
         let config = try decoder.decode(SettingsConfig.self, from: data)
