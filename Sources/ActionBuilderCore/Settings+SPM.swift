@@ -5,6 +5,7 @@
 
 import Foundation
 import Runner
+import SemanticVersion
 
 struct ToolsVersion: Codable {
     let _version: String
@@ -51,6 +52,11 @@ extension Settings {
             }
         }
         
+        let version = SemanticVersion(info.toolsVersion._version)
+        let swiftVersion = "swift\(version.major)\(version.minor)"
+        if let compiler = Compiler.ID(rawValue: swiftVersion) {
+            defaults.compilers.insert(compiler)
+        }
         
         self = defaults
     }

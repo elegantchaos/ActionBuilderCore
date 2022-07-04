@@ -8,18 +8,18 @@ import Foundation
 public struct Settings: Codable, Equatable {
     
     public var platforms: Set<Platform.ID>
-    public var compilers: [Compiler.ID]
-    public var configurations: [Configuration]
+    public var compilers: Set<Compiler.ID>
+    public var configurations: Set<Configuration>
     public let test: Bool
     public let firstlast: Bool
     public let postSlackNotification: Bool
     public let uploadLogs: Bool
     public let header: Bool
 
-    public init(platforms: Set<Platform.ID> = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
-        self.platforms = platforms
-        self.compilers = compilers
-        self.configurations = configurations
+    public init(platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
+        self.platforms = Set(platforms)
+        self.compilers = Set(compilers)
+        self.configurations = Set(configurations)
         self.test = test
         self.firstlast = firstlast
         self.postSlackNotification = notify

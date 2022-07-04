@@ -16,7 +16,7 @@ struct MockRepo: Repo {
 }
 
 final class ActionBuilderCoreTests: XCTestCase {
-    func testParsing() throws {
+    func testParsingPackage() throws {
         guard let project = ProcessInfo.processInfo.environment["TEST_PACKAGE"] else {
             XCTFail("no test package specified")
             return
@@ -24,6 +24,8 @@ final class ActionBuilderCoreTests: XCTestCase {
         
         let path = (project as NSString).expandingTildeInPath
         let settings = try Settings(forPackage: URL(fileURLWithPath: path))
+        XCTAssertEqual(settings.compilers, [.swift56])
+        XCTAssertEqual(settings.platforms, [.macOS])
         print(settings)
     }
     
