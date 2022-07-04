@@ -7,7 +7,7 @@ import Foundation
 
 public struct Settings: Codable, Equatable {
     
-    public var platforms: [Platform.ID]
+    public var platforms: Set<Platform.ID>
     public var compilers: [Compiler.ID]
     public var configurations: [Configuration]
     public let test: Bool
@@ -16,7 +16,7 @@ public struct Settings: Codable, Equatable {
     public let uploadLogs: Bool
     public let header: Bool
 
-    public init(platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
+    public init(platforms: Set<Platform.ID> = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = true, firstlast: Bool = true, notify: Bool = false, upload: Bool = true, header: Bool = true) {
         self.platforms = platforms
         self.compilers = compilers
         self.configurations = configurations

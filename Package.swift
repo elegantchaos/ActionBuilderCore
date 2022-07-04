@@ -18,6 +18,8 @@ let package = Package(
     ],
 
     dependencies: [
+        .package(url: "https://github.com/elegantchaos/Runner", from: "1.3.1"),
+        .package(url: "https://github.com/elegantchaos/SemanticVersion", from: "1.1.0"),
         .package(url: "https://github.com/elegantchaos/XCTestExtensions", from: "1.4.7")
     ],
 
@@ -25,6 +27,8 @@ let package = Package(
         .target(
             name: "ActionBuilderCore",
             dependencies: [
+                "Runner",
+                "SemanticVersion"
             ]
         ),
 

@@ -16,6 +16,17 @@ struct MockRepo: Repo {
 }
 
 final class ActionBuilderCoreTests: XCTestCase {
+    func testParsing() throws {
+        guard let project = ProcessInfo.processInfo.environment["TEST_PACKAGE"] else {
+            XCTFail("no test package specified")
+            return
+        }
+        
+        let path = (project as NSString).expandingTildeInPath
+        let settings = try Settings(forPackage: URL(fileURLWithPath: path))
+        print(settings)
+    }
+    
     func testYAMLmacOSSwift56() {
         let expected = """
             # --------------------------------------------------------------------------------

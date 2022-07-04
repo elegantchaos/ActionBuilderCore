@@ -10,6 +10,24 @@
       }
     },
     {
+      "identity" : "runner",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/Runner",
+      "state" : {
+        "revision" : "dc59f4b180905aa4c6e7b6ecb354664176793f40",
+        "version" : "1.3.1"
+      }
+    },
+    {
+      "identity" : "semanticversion",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/SemanticVersion",
+      "state" : {
+        "revision" : "6bda5a45a2f687a82a0fbb002bee8ad31e44f478",
+        "version" : "1.1.0"
+      }
+    },
+    {
       "identity" : "xctestextensions",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/elegantchaos/XCTestExtensions",
