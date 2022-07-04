@@ -1,0 +1,8 @@
+{
+    "platforms": ["macOS", "linux"],
+    "compilers": ["swift55", "swiftNightly"],
+    "test": true,
+    "header": false,
+    "firstlast": false,
+    "uploadLogs": false
+}

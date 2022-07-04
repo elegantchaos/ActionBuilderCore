@@ -35,9 +35,13 @@ final class ActionBuilderCoreTests: XCTestCase {
     func testParsingPackageConfigFile() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-config", withExtension: "package")!
         let settings = try Settings(forPackage: examplePackage)
-        XCTAssertEqual(settings.compilers, [.swift56, .swiftNightly])
+        XCTAssertEqual(settings.compilers, [.swift55, .swiftNightly])
         XCTAssertEqual(settings.platforms, [.macOS, .linux])
-        print(settings)
+        XCTAssertTrue(settings.test)
+        XCTAssertFalse(settings.header)
+        XCTAssertFalse(settings.uploadLogs)
+        XCTAssertFalse(settings.postSlackNotification)
+        XCTAssertFalse(settings.firstlast)
     }
 
     func testYAMLmacOSSwift56() {

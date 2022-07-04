@@ -13,13 +13,6 @@ enum SettingsError: Error {
 
 extension Settings {
     
-    /// Initialise from a JSON settings file.
-    init(forConfig url: URL) throws {
-        let decoder = JSONDecoder()
-        let data = try Data(contentsOf: url)
-        self = try decoder.decode(Self.self, from: data)
-    }
-    
     /// Initialise from an SPM package directory
     init(forPackage url: URL) throws {
 
@@ -31,7 +24,7 @@ extension Settings {
         let package = try PackageInfo(from: url)
 
         // extract platforms from the package if they weren't explicitly specified
-        if settings.platforms.isEmpty {
+        if settings.enabledPlatforms.isEmpty {
             for name in package.platforms.map(\.platformName) {
                 if let id = Platform.ID(rawInsensitive: name) {
                     settings.platforms.insert(id)
@@ -40,7 +33,7 @@ extension Settings {
         }
         
         // extract compiler versions from the package if they weren't explicitly specified
-        if settings.compilers.isEmpty {
+        if settings.enabledCompilers.isEmpty {
             let version = SemanticVersion(package.toolsVersion._version)
             let swiftVersion = "swift\(version.major)\(version.minor)"
             if let compiler = Compiler.ID(rawValue: swiftVersion) {

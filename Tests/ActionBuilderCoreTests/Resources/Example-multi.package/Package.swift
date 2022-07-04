@@ -11,7 +11,7 @@ let package = Package(
     name: "ExamplePackage",
     
     platforms: [
-        .macOS(.v12)
+        .macOS(.v12), .iOS(.v14), .tvOS(.v14)
     ],
     
     products: [
