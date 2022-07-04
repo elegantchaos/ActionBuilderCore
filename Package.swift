@@ -42,6 +42,11 @@ let package = Package(
             dependencies: [
                 "ActionBuilderCore",
                 "XCTestExtensions"
+            ],
+            resources: [
+                .copy("Resources/Example-config.package"),
+                .copy("Resources/Example-mac.package"),
+                .copy("Resources/Example-multi.package")
             ]
         ),
     ]

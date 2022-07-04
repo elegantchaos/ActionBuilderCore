@@ -3,13 +3,14 @@
 //  All code (c) 2020 - present day, Elegant Chaos Limited.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 public class Platform: Identifiable {
     public let id: ID
     public let name: String
     public let subPlatforms: [Platform]
     public let xcodeDestination: String?
     
-    public enum ID: String, Codable {
+    public enum ID: String, Codable, CaseInsensitiveRawRepresentable {
         case macOS
         case iOS
         case tvOS

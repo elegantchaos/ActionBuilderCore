@@ -4,22 +4,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
-import Runner
 import SemanticVersion
-
-struct ToolsVersion: Codable {
-    let _version: String
-}
-
-struct PlatformInfo: Codable {
-    let platformName: String
-    let version: String
-}
-
-struct PackageInfo: Codable {
-    let toolsVersion: ToolsVersion
-    let platforms: [PlatformInfo]
-}
 
 enum SettingsError: Error {
     case parsingFailed
@@ -27,37 +12,42 @@ enum SettingsError: Error {
 }
 
 extension Settings {
-    init(forPackage url: URL) throws {
-        let spm = Runner(command: "swift", cwd: url)
-        let output = try spm.sync(arguments: ["package", "dump-package"])
-        guard output.status == 0 else {
-            throw SettingsError.parsingFailed
-        }
-        
-        guard let jsonData = output.stdout.data(using: .utf8) else {
-            throw SettingsError.corruptData
-        }
-
-        print(output.stdout)
-
+    
+    /// Initialise from a JSON settings file.
+    init(forConfig url: URL) throws {
         let decoder = JSONDecoder()
-        let info = try decoder.decode(PackageInfo.self, from: jsonData)
-        print(info)
-        
-        var defaults = Self()
-        
-        for name in info.platforms.map(\.platformName) {
-            if let id = Platform.ID(rawValue: name) {
-                defaults.platforms.insert(id)
+        let data = try Data(contentsOf: url)
+        self = try decoder.decode(Self.self, from: data)
+    }
+    
+    /// Initialise from an SPM package directory
+    init(forPackage url: URL) throws {
+
+        // try to load settings from config file at the root of the directory
+        let configURL = url.appendingPathComponent(".actionbuilder.json")
+        var settings = (try? Self(forConfig: configURL)) ?? Self()
+
+        // try to parse package info
+        let package = try PackageInfo(from: url)
+
+        // extract platforms from the package if they weren't explicitly specified
+        if settings.platforms.isEmpty {
+            for name in package.platforms.map(\.platformName) {
+                if let id = Platform.ID(rawInsensitive: name) {
+                    settings.platforms.insert(id)
+                }
             }
         }
         
-        let version = SemanticVersion(info.toolsVersion._version)
-        let swiftVersion = "swift\(version.major)\(version.minor)"
-        if let compiler = Compiler.ID(rawValue: swiftVersion) {
-            defaults.compilers.insert(compiler)
+        // extract compiler versions from the package if they weren't explicitly specified
+        if settings.compilers.isEmpty {
+            let version = SemanticVersion(package.toolsVersion._version)
+            let swiftVersion = "swift\(version.major)\(version.minor)"
+            if let compiler = Compiler.ID(rawValue: swiftVersion) {
+                settings.compilers.insert(compiler)
+            }
         }
         
-        self = defaults
+        self = settings
     }
 }

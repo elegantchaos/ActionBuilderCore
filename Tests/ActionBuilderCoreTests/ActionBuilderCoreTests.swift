@@ -16,19 +16,30 @@ struct MockRepo: Repo {
 }
 
 final class ActionBuilderCoreTests: XCTestCase {
-    func testParsingPackage() throws {
-        guard let project = ProcessInfo.processInfo.environment["TEST_PACKAGE"] else {
-            XCTFail("no test package specified")
-            return
-        }
-        
-        let path = (project as NSString).expandingTildeInPath
-        let settings = try Settings(forPackage: URL(fileURLWithPath: path))
+    func testParsingPackageMacPlatform() throws {
+        let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
+        let settings = try Settings(forPackage: examplePackage)
         XCTAssertEqual(settings.compilers, [.swift56])
         XCTAssertEqual(settings.platforms, [.macOS])
         print(settings)
     }
-    
+
+    func testParsingPackageMultiPlatform() throws {
+        let examplePackage = Bundle.module.url(forResource: "Example-multi", withExtension: "package")!
+        let settings = try Settings(forPackage: examplePackage)
+        XCTAssertEqual(settings.compilers, [.swift56])
+        XCTAssertEqual(settings.platforms, [.iOS, .macOS, .tvOS])
+        print(settings)
+    }
+
+    func testParsingPackageConfigFile() throws {
+        let examplePackage = Bundle.module.url(forResource: "Example-config", withExtension: "package")!
+        let settings = try Settings(forPackage: examplePackage)
+        XCTAssertEqual(settings.compilers, [.swift56, .swiftNightly])
+        XCTAssertEqual(settings.platforms, [.macOS, .linux])
+        print(settings)
+    }
+
     func testYAMLmacOSSwift56() {
         let expected = """
             # --------------------------------------------------------------------------------
