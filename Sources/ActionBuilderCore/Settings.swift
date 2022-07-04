@@ -5,7 +5,9 @@
 
 import Foundation
 
-public struct ActionStatusConfig: Codable {
+/// Settings for the generation process.
+/// Can be read from the `.actionbuilder.json` file in the root of a package directory.
+public struct Settings: Codable {
     public var name: String?
     public var owner: String?
     public var workflow: String?
@@ -18,8 +20,8 @@ public struct ActionStatusConfig: Codable {
     public let uploadLogs: Bool?
     public let header: Bool?
     
-    /// Initialise from a JSON configuration file.
-    public init(forConfig url: URL) throws {
+    /// Initialise from a configuration file.
+    public init(from url: URL) throws {
         let decoder = JSONDecoder()
         let data = try Data(contentsOf: url)
         self = try decoder.decode(Self.self, from: data)

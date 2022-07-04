@@ -26,6 +26,7 @@ public struct Repo: Equatable {
     public let uploadLogs: Bool
     public let header: Bool
 
+    /// Initialise explicitly.
     public init(name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast, postSlackNotification: Bool = Self.defaultPostSlackNotification, upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader) {
         self.name = name
         self.owner = owner
@@ -40,6 +41,21 @@ public struct Repo: Equatable {
         self.header = header
     }
     
+    /// Initialise from settings
+    public init(settings: Settings?, defaultName: String, defaultOwner: String = Self.defaultOwner) {
+        self.owner = settings?.owner ?? defaultOwner
+        self.name = settings?.name ?? defaultName
+        self.workflow = settings?.workflow ?? Self.defaultWorkflow
+        self.platforms = settings?.platforms ?? []
+        self.compilers = settings?.compilers ?? []
+        self.configurations = settings?.configurations ?? []
+        self.test = settings?.test ?? Self.defaultTest
+        self.firstlast = settings?.firstlast ?? Self.defaultFirstLast
+        self.uploadLogs = settings?.uploadLogs ?? Self.defaultUploadLogs
+        self.header = settings?.header ?? Self.defaultHeader
+        self.postSlackNotification = settings?.postSlackNotification ?? Self.defaultPostSlackNotification
+    }
+
     var enabledPlatforms: [Platform] {
         return Platform.platforms.filter { platforms.contains($0.id) }
     }

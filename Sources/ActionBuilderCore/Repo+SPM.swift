@@ -7,39 +7,38 @@ import Foundation
 import SemanticVersion
 
 extension Repo {
+
     /// Initialise from an SPM package directory
     init(forPackage url: URL) throws {
         
-        // try to load config file at the root of the directory
-        let configURL = url.appendingPathComponent(".actionbuilder.json")
-        let config = try? ActionStatusConfig(forConfig: configURL)
-
-        // default repo settings are based on the config file
+        // use the settings file at the root of the directory to
+        // configure the repo (if it exists)
         let defaultName = url.deletingPathExtension().lastPathComponent
-        var settings = Self(forConfig: config, defaultName: defaultName)
+        let settings = try? Settings(from: url.appendingPathComponent(".actionbuilder.json"))
+        var repo = Self(settings: settings, defaultName: defaultName)
         
-        // try to parse package info
+        // try to parse SPM package info
         let package = try PackageInfo(from: url)
         
         // extract platforms from the package if they weren't explicitly specified
-        if settings.enabledPlatforms.isEmpty {
+        if repo.enabledPlatforms.isEmpty {
             for name in package.platforms.map(\.platformName) {
                 if let id = Platform.ID(rawInsensitive: name) {
-                    settings.platforms.insert(id)
+                    repo.platforms.insert(id)
                 }
             }
         }
         
         // extract compiler versions from the package if they weren't explicitly specified
-        if settings.enabledCompilers.isEmpty {
+        if repo.enabledCompilers.isEmpty {
             let version = SemanticVersion(package.toolsVersion._version)
             let swiftVersion = "swift\(version.major)\(version.minor)"
             if let compiler = Compiler.ID(rawValue: swiftVersion) {
-                settings.compilers.insert(compiler)
+                repo.compilers.insert(compiler)
             }
         }
 
-        self = settings
+        self = repo
     }
 
 }
