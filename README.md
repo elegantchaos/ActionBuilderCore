@@ -25,3 +25,14 @@ If they aren't explicitly set in the configuration file, the code attempts to pi
 
 
 
+
+### History
+
+This code was originally part of [Action Status](https://apps.apple.com/gb/app/action-status/id1498761533), which is a little macOS/iOS tool I made for monitoring Github Actions.
+
+I've now split the code out so that it can be used in other places.
+
+I plan to remove the generation functionality from Action Status, and instead make a standlone Action Builder application (probably macOS only).
+
+I have also created an [SPM command plugin](https://github.com/elegantchaos/ActionBuilderPlugin), so that you can generate workflows directly from the command line.
+
