@@ -21,6 +21,8 @@ final class ActionBuilderCoreTests: XCTestCase {
     func testParsingPackageConfigFile() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-config", withExtension: "package")!
         let repo = try Repo(forPackage: examplePackage)
+        XCTAssertEqual(repo.name, "ConfigTestPackage")
+        XCTAssertEqual(repo.owner, "ConfigTestOwner")
         XCTAssertEqual(repo.compilers, [.swift55, .swiftNightly])
         XCTAssertEqual(repo.platforms, [.macOS, .linux])
         XCTAssertTrue(repo.test)

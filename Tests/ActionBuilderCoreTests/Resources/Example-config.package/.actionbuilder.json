@@ -1,6 +1,6 @@
 {
-    "name": "TestPackage",
-    "owner": "TestOwner",
+    "name": "ConfigTestPackage",
+    "owner": "ConfigTestOwner",
     "platforms": ["macOS", "linux"],
     "compilers": ["swift55", "swiftNightly"],
     "configurations": ["release"],
