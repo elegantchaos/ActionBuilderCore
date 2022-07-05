@@ -7,14 +7,14 @@ final class ActionBuilderCoreTests: XCTestCase {
     func testParsingPackageMacPlatform() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
         let repo = try Repo(forPackage: examplePackage)
-        XCTAssertEqual(repo.compilers, [.swift56])
-        XCTAssertEqual(repo.platforms, [.macOS])
+        XCTAssertEqual(repo.enabledCompilers.map { $0.id }, [.swift56, .swift57 ])
+        XCTAssertEqual(repo.enabledPlatforms.map { $0.id }, [.macOS])
     }
 
     func testParsingPackageMultiPlatform() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-multi", withExtension: "package")!
         let repo = try Repo(forPackage: examplePackage)
-        XCTAssertEqual(repo.compilers, [.swift56])
+        XCTAssertEqual(repo.compilers, [.swift56, .swift57])
         XCTAssertEqual(repo.platforms, [.iOS, .macOS, .tvOS])
     }
 

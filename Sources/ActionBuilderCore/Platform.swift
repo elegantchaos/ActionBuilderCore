@@ -116,14 +116,15 @@ public class Platform: Identifiable {
         if test {
             for config in configurations {
                 let isRelease = config == .release
-                let buildForTesting = isRelease ? "-Xswiftc -enable-testing" : ""
-                let excludedVersions: [Compiler.ID] = [.swift50, .swiftNightly]
-                let discovery = !excludedVersions.contains(compiler.id) && !((compiler.id == .swift51) && isRelease) ? "--enable-test-discovery" : ""
+                var enableDiscovery: [Compiler.ID] = [.swift52, .swift53, .swift54, .swift55]
+                if !isRelease { enableDiscovery.append(.swift51) }
+                let buildForTestingFlag = isRelease ? "-Xswiftc -enable-testing" : ""
+                let discoveryFlag = enableDiscovery.contains(compiler.id) ? "--enable-test-discovery" : ""
                 yaml.append(
                     """
                     
                             - name: Test (\(config))
-                              run: \(pathFix)swift test --configuration \(config) \(buildForTesting) \(discovery)
+                              run: \(pathFix)swift test --configuration \(config) \(buildForTestingFlag) \(discoveryFlag)
                     """
                 )
             }
@@ -250,29 +251,19 @@ public class Platform: Identifiable {
     
 
     fileprivate func toolchainYAML(_ yaml: inout String, _ branch: String, _ version: String) {
-        let download: String
-        if branch == "development" {
-            download =
-            """
-                        branch="\(branch)"
-                        wget --quiet https://download.swift.org/$branch/xcode/latest-build.yml
-                        grep "download:" < latest-build.yml > filtered.yml
-                        sed -e 's/-osx.pkg//g' filtered.yml > stripped.yml
-                        sed -e 's/:[^:\\/\\/]/YML="/g;s/$/"/g;s/ *=/=/g' stripped.yml > snapshot.sh
-                        source snapshot.sh
-                        echo "Installing Toolchain: $downloadYML"
-                        wget --quiet https://swift.org/builds/$branch/xcode/$downloadYML/$downloadYML-osx.pkg
-                        sudo installer -pkg $downloadYML-osx.pkg -target /
-                        ln -s "/Library/Developer/Toolchains/$downloadYML.xctoolchain/usr/bin" swift-latest
-            """
-        } else {
-            download =
-            """
-                        wget --quiet https://download.swift.org/\(branch.lowercased())/xcode/\(branch)/\(branch)-osx.pkg
-                        sudo installer -pkg \(branch)-osx.pkg -target /
-                        ln -s "/Library/Developer/Toolchains/\(branch).xctoolchain/usr/bin" swift-latest
-            """
-        }
+        let download =
+        """
+                    branch="\(branch)"
+                    wget --quiet https://download.swift.org/$branch/xcode/latest-build.yml
+                    grep "download:" < latest-build.yml > filtered.yml
+                    sed -e 's/-osx.pkg//g' filtered.yml > stripped.yml
+                    sed -e 's/:[^:\\/\\/]/YML="/g;s/$/"/g;s/ *=/=/g' stripped.yml > snapshot.sh
+                    source snapshot.sh
+                    echo "Installing Toolchain: $downloadYML"
+                    wget --quiet https://swift.org/builds/$branch/xcode/$downloadYML/$downloadYML-osx.pkg
+                    sudo installer -pkg $downloadYML-osx.pkg -target /
+                    ln -s "/Library/Developer/Toolchains/$downloadYML.xctoolchain/usr/bin" swift-latest
+        """
 
         yaml.append(
             """

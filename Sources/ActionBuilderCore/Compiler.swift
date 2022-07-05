@@ -48,8 +48,11 @@ public class Compiler: Identifiable {
         case swift55
         case swift56
         case swift57
+        
         case swiftLatest
         case swiftNightly
+        
+        static let latestRelease = Self.swift57
     }
     
     public static let compilers: [Compiler] = [
@@ -62,11 +65,12 @@ public class Compiler: Identifiable {
         Compiler(.swift53, name: "Swift 5.3", short: "5.3", linux: "swift:5.3.3-bionic", mac: .xcode(version: "12.4", image: "macos-11")),
         Compiler(.swift54, name: "Swift 5.4", short: "5.4", linux: "swift:5.4.2-bionic", mac: .xcode(version: "12.5.1", image: "macos-11")),
         Compiler(.swift55, name: "Swift 5.5", short: "5.5", linux: "swift:5.5.3-bionic", mac: .xcode(version: "13.0", image: "macos-11")),
-        
-        // https://download.swift.org/swift-5.6.1-release/xcode/swift-5.6.1-RELEASE/swift-5.6.1-RELEASE-osx.pkg
-        Compiler(.swift56, name: "Swift 5.6", short: "5.6", linux: "swift:5.6.1-bionic", mac: .toolchain(version: "13.2.1", branch: "swift-5.6.1-RELEASE", image: "macos-11")),
-        
+        Compiler(.swift56, name: "Swift 5.6", short: "5.6", linux: "swift:5.6.2-bionic", mac: .xcode(version: "13.4.1", image: "macos-12")),
+
+        // https://download.swift.org/development/xcode/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a-osx.pkg
+        Compiler(.swift57, name: "Swift 5.7", short: "5.7", linux: "swiftlang/swift:nightly-5.7-bionic", mac: .toolchain(version: "13.4.1", branch: "swift-5.7-branch", image: "macos-12")),
+
         // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
-        Compiler(.swiftNightly, name: "Swift Development Nightly", short: "dev", linux: "swiftlang/swift:nightly", mac: .toolchain(version: "13.2.1", branch: "development", image: "macos-11")),
+        Compiler(.swiftNightly, name: "Swift Development Nightly", short: "dev", linux: "swiftlang/swift:nightly", mac: .toolchain(version: "13.4.1", branch: "development", image: "macos-12")),
     ]
 }

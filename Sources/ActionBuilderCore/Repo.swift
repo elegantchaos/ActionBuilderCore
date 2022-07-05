@@ -58,15 +58,29 @@ public struct Repo: Equatable {
     }
 
     var enabledPlatforms: [Platform] {
-        return Platform.platforms.filter { platforms.contains($0.id) }
+        return Platform.platforms
+            .filter { platforms.contains($0.id) }
+            .sorted { $0.id < $1.id }
     }
 
     var enabledCompilers: [Compiler] {
-        return Compiler.compilers.filter { compilers.contains($0.id) }
+        var enabledIDs = self.compilers
+        if enabledIDs.contains(.swiftLatest) {
+            enabledIDs.remove(.swiftLatest)
+            enabledIDs.insert(.latestRelease)
+        }
+        
+        let sorted = Compiler.compilers
+            .filter { enabledIDs.contains($0.id) }
+            .sorted { $0.id < $1.id }
+        
+        return sorted
     }
     
     var enabledConfigs: [Configuration] {
-        return Configuration.allCases.filter { configurations.contains($0) }
+        return Configuration.allCases
+            .filter { configurations.contains($0) }
+            .sorted { $0.rawValue < $1.rawValue }
     }
 
     var compilersToTest: [Compiler] {

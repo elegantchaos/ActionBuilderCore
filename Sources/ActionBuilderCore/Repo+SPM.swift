@@ -38,7 +38,7 @@ extension Repo {
             let version = SemanticVersion(package.toolsVersion._version)
             let swiftVersion = "swift\(version.major)\(version.minor)"
             if let compiler = Compiler.ID(rawValue: swiftVersion) {
-                repo.compilers.insert(compiler)
+                repo.compilers = [compiler, .swiftLatest]
             }
         }
 
