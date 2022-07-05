@@ -17,7 +17,11 @@ These include:
 - whether to upload build logs
 - whether to post a notification to a slack channel
 - whether to ammend a header to the README
+- whether to test against every requested swift version, or just the earliest and latest 
 
+These settings are read from an `.actionbuilder.json` file in the root of the package directory. If it is missing, some defaults are chosen.
+
+If they aren't explicitly set in the configuration file, the code attempts to pick sensible values by examining the `Package.swift` file. The tool version of the file is used to determine the version of Swift to test against. The platforms listed in the file are used to determine platforms to test against.
 
 
 
