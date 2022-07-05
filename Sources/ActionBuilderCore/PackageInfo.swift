@@ -18,11 +18,9 @@ struct PackageInfo: Codable {
         guard output.status == 0 else {
             throw Error.launchingSwiftFailed(url, output.stderr)
         }
-        
-        try? output.stdout.data(using: .utf8)?.write(to: url.appendingPathComponent("dump.json"))
-        
+
         guard let jsonData = output.stdout.data(using: .utf8) else {
-            throw Error.corruptData
+            throw Error.corruptData(output.stdout)
         }
         
         let decoder = JSONDecoder()
@@ -40,7 +38,7 @@ struct PackageInfo: Codable {
     
     enum Error: Swift.Error {
         case launchingSwiftFailed(URL, String)
-        case corruptData
+        case corruptData(String)
     }
 
 }

@@ -17,8 +17,11 @@ import Foundation
         let repo = try Repo(forPackage: url)
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
         let source = generator.workflow(for: repo)
-        let sourceURL = url.appendingPathComponent(".github/workflows/\(repo.workflow).yml")
-        try? FileManager.default.createDirectory(at: sourceURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let workflowsURL = url.appendingPathComponent(".github/workflows")
+        if !FileManager.default.fileExists(atPath: workflowsURL.path) {
+            try FileManager.default.createDirectory(at: workflowsURL, withIntermediateDirectories: true)
+        }
+        let sourceURL = workflowsURL.appendingPathComponent("\(repo.workflow).yml")
         try source.data(using: .utf8)?.write(to: sourceURL)
     }
 }
