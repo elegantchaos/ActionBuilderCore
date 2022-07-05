@@ -16,10 +16,10 @@ struct PackageInfo: Codable {
         let spm = Runner(command: "swift", cwd: url)
         let output = try spm.sync(arguments: ["package", "dump-package"])
         guard output.status == 0 else {
-            throw Error.parsingFailed
+            throw Error.launchingSwiftFailed(url, output.stderr)
         }
         
-        print(output.stdout)
+        try? output.stdout.data(using: .utf8)?.write(to: url.appendingPathComponent("dump.json"))
         
         guard let jsonData = output.stdout.data(using: .utf8) else {
             throw Error.corruptData
@@ -39,7 +39,7 @@ struct PackageInfo: Codable {
     }
     
     enum Error: Swift.Error {
-        case parsingFailed
+        case launchingSwiftFailed(URL, String)
         case corruptData
     }
 

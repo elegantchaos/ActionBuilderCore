@@ -6,7 +6,7 @@
 import ActionBuilderCore
 import Foundation
 
-@main struct ActionBuilderPlugin {
+@main struct ActionBuilderTool {
     static func main() throws {
         let args = ProcessInfo.processInfo.arguments
         guard args.count == 2 else {
@@ -18,6 +18,7 @@ import Foundation
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
         let source = generator.workflow(for: repo)
         let sourceURL = url.appendingPathComponent(".github/workflows/\(repo.workflow).yml")
+        try? FileManager.default.createDirectory(at: sourceURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try source.data(using: .utf8)?.write(to: sourceURL)
     }
 }
