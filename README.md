@@ -23,7 +23,24 @@ These settings are read from an `.actionbuilder.json` file in the root of the pa
 
 If they aren't explicitly set in the configuration file, the code attempts to pick sensible values by examining the `Package.swift` file. The tool version of the file is used to determine the version of Swift to test against. The platforms listed in the file are used to determine platforms to test against.
 
+### Config Format
 
+Here is an example of `.actionbuilder.json`:
+
+```json
+{
+    "name": "TestPackage",
+    "owner": "TestOwner",
+    "platforms": ["macOS", "linux"],
+    "compilers": ["swift55", "swiftNightly"],
+    "configurations": ["release"],
+    "test": true,
+    "header": false,
+    "firstlast": false,
+    "uploadLogs": false,
+    "postSlackNotification": false
+}
+```
 
 
 ### History

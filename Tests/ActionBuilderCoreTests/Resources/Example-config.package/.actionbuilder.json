@@ -1,8 +1,12 @@
 {
+    "name": "TestPackage",
+    "owner": "TestOwner",
     "platforms": ["macOS", "linux"],
     "compilers": ["swift55", "swiftNightly"],
+    "configurations": ["release"],
     "test": true,
     "header": false,
     "firstlast": false,
-    "uploadLogs": false
+    "uploadLogs": false,
+    "postSlackNotification": false
 }
