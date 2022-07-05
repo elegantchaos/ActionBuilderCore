@@ -12,13 +12,14 @@ extension Repo {
     public init(forPackage url: URL) throws {
         
         // try to extract git info
-        let git = try GitInfo(from: url)
+        let gitInfo = try? GitInfo(from: url)
+        let defaultName = (gitInfo?.url ?? url).deletingPathExtension().lastPathComponent
+        let defaultOwner = gitInfo?.owner ?? Self.defaultOwner
 
         // use the settings file at the root of the directory to
         // configure the repo (if it exists)
-        let defaultName = url.deletingPathExtension().lastPathComponent
         let settings = try? Settings(from: url.appendingPathComponent(".actionbuilder.json"))
-        var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: git.owner)
+        var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: defaultOwner)
         
         // try to parse SPM package info
         let package = try PackageInfo(from: url)
