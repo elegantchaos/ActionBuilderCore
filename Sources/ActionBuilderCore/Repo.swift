@@ -13,6 +13,7 @@ public struct Repo: Equatable {
     public static let defaultPostSlackNotification = false
     public static let defaultUploadLogs = true
     public static let defaultHeader = true
+    public static let defaultConfigurations: [Configuration] = [.release]
     
     public let name: String
     public let owner: String
@@ -27,7 +28,7 @@ public struct Repo: Equatable {
     public let header: Bool
 
     /// Initialise explicitly.
-    public init(name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = [.release], test: Bool = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast, postSlackNotification: Bool = Self.defaultPostSlackNotification, upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader) {
+    public init(name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = Self.defaultConfigurations, test: Bool = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast, postSlackNotification: Bool = Self.defaultPostSlackNotification, upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader) {
         self.name = name
         self.owner = owner
         self.workflow = workflow
@@ -48,7 +49,7 @@ public struct Repo: Equatable {
         self.workflow = settings?.workflow ?? Self.defaultWorkflow
         self.platforms = settings?.platforms ?? []
         self.compilers = settings?.compilers ?? []
-        self.configurations = settings?.configurations ?? []
+        self.configurations = settings?.configurations ?? Set(Self.defaultConfigurations)
         self.test = settings?.test ?? Self.defaultTest
         self.firstlast = settings?.firstlast ?? Self.defaultFirstLast
         self.uploadLogs = settings?.uploadLogs ?? Self.defaultUploadLogs

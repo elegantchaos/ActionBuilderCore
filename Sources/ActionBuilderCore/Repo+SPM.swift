@@ -11,11 +11,14 @@ extension Repo {
     /// Initialise from an SPM package directory
     public init(forPackage url: URL) throws {
         
+        // try to extract git info
+        let git = try GitInfo(from: url)
+
         // use the settings file at the root of the directory to
         // configure the repo (if it exists)
         let defaultName = url.deletingPathExtension().lastPathComponent
         let settings = try? Settings(from: url.appendingPathComponent(".actionbuilder.json"))
-        var repo = Self(settings: settings, defaultName: defaultName)
+        var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: git.owner)
         
         // try to parse SPM package info
         let package = try PackageInfo(from: url)
@@ -38,6 +41,8 @@ extension Repo {
             }
         }
 
+        // extract owner
+        
         self = repo
     }
 

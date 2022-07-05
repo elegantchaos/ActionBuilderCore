@@ -15,6 +15,7 @@ import Foundation
                        
         let url = URL(fileURLWithPath: args[1])
         let repo = try Repo(forPackage: url)
+        print(repo)
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
         let source = generator.workflow(for: repo)
         let workflowsURL = url.appendingPathComponent(".github/workflows")
