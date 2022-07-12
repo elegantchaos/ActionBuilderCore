@@ -26,4 +26,19 @@ public struct Settings: Codable {
         let data = try Data(contentsOf: url)
         self = try decoder.decode(Self.self, from: data)
     }
+    
+    /// Initialise from an existing Repo
+    public init(from repo: Repo) {
+        self.name = repo.name
+        self.owner = repo.owner
+        self.workflow = repo.workflow
+        self.platforms = repo.platforms
+        self.compilers = repo.compilers
+        self.configurations = repo.configurations
+        self.test = repo.test
+        self.firstlast = repo.firstlast
+        self.uploadLogs = repo.uploadLogs
+        self.header = repo.header
+        self.postSlackNotification = repo.postSlackNotification
+    }
 }

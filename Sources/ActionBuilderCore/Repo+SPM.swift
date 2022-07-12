@@ -18,7 +18,7 @@ extension Repo {
 
         // use the settings file at the root of the directory to
         // configure the repo (if it exists)
-        let settings = try? Settings(from: url.appendingPathComponent(".actionbuilder.json"))
+        let settings = try? Settings(from: Self.settingsURL(forPackage: url))
         var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: defaultOwner)
         
         // try to parse SPM package info
@@ -47,4 +47,8 @@ extension Repo {
         self = repo
     }
 
+    /// The URL of the actionbuilder settings file for a given package directory.
+    public static func settingsURL(forPackage url: URL) -> URL {
+        return url.appendingPathComponent(".actionbuilder.json")
+    }
 }
