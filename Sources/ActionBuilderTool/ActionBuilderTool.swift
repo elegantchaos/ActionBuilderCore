@@ -4,6 +4,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import ActionBuilderCore
+import AppKit
 import Foundation
 
 @main struct ActionBuilderTool {
@@ -12,19 +13,27 @@ import Foundation
         guard args.count >= 2 else {
             fatalError("Usage: \(args[0]) <package>")
         }
-                       
+        
         let url = URL(fileURLWithPath: args[1])
         let repo = try Repo(forPackage: url)
-
+        
         if shouldMakeSettings(arguments: args) {
             makeSettings(for: repo, at: url)
         }
-
+        
         if shouldRevealSettings(arguments: args) {
             revealSettings(for: repo, at: url)
         }
         
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
+        try updateWorkflow(for: repo, at: url, with: generator)
+
+        if repo.header {
+            try updateHeader(for: repo, at: url, with: generator)
+        }
+    }
+    
+    static func updateWorkflow(for repo: Repo, at url: URL, with generator: Generator) throws {
         let source = generator.workflow(for: repo)
         let workflowsURL = url.appendingPathComponent(".github/workflows")
         if !FileManager.default.fileExists(atPath: workflowsURL.path) {
@@ -32,6 +41,19 @@ import Foundation
         }
         let sourceURL = workflowsURL.appendingPathComponent("\(repo.workflow).yml")
         try source.data(using: .utf8)?.write(to: sourceURL)
+    }
+    
+    static func updateHeader(for repo: Repo, at url: URL, with generator: Generator) throws {
+        let (header, delimiter) = generator.header(for: repo)
+        
+        let readmeURL = url.appendingPathComponent("README.md")
+        var readme = try String(contentsOf: readmeURL, encoding: .utf8)
+        if let range = readme.range(of: delimiter) {
+            readme.removeSubrange(readme.startIndex ..< range.upperBound)
+        }
+        readme.insert(contentsOf: header, at: readme.startIndex)
+        let data = readme.data(using: .utf8)
+        try data?.write(to: readmeURL)
     }
     
     static func shouldMakeSettings(arguments: [String]) -> Bool {
@@ -58,6 +80,7 @@ import Foundation
     
     static func revealSettings(for repo: Repo, at url: URL) {
         let settingsURL = Repo.settingsURL(forPackage: url)
+        print(settingsURL)
         NSWorkspace.shared.selectFile(settingsURL.path, inFileViewerRootedAtPath: "")
     }
 }
