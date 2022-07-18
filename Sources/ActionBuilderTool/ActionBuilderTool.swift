@@ -20,6 +20,10 @@ import Foundation
             makeSettings(for: repo, at: url)
         }
 
+        if shouldRevealSettings(arguments: args) {
+            revealSettings(for: repo, at: url)
+        }
+        
         let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
         let source = generator.workflow(for: repo)
         let workflowsURL = url.appendingPathComponent(".github/workflows")
@@ -46,5 +50,14 @@ import Foundation
                 print("Failed to create config file.\n\(error)")
             }
         }
+    }
+
+    static func shouldRevealSettings(arguments: [String]) -> Bool {
+        return ProcessInfo.processInfo.arguments.contains("--reveal-config")
+    }
+    
+    static func revealSettings(for repo: Repo, at url: URL) {
+        let settingsURL = Repo.settingsURL(forPackage: url)
+        NSWorkspace.shared.selectFile(settingsURL.path, inFileViewerRootedAtPath: "")
     }
 }
