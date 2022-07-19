@@ -21,7 +21,12 @@ These include:
 
 These settings are read from an `.actionbuilder.json` file in the root of the package directory. If it is missing, some defaults are chosen.
 
-If they aren't explicitly set in the configuration file, the code attempts to pick sensible values by examining the `Package.swift` file. The tool version of the file is used to determine the version of Swift to test against. The platforms listed in the file are used to determine platforms to test against.
+If they aren't explicitly set in the configuration file, the code attempts to pick sensible values by examining the `Package.swift` manifest:
+
+- the tool version of the manifest is used to determine the version of Swift to test against. 
+- the platform minimum deployment versions listed in the manifest are used to determine platforms to test against 
+
+If the package manifest includes a minimum deployment for `macOS`, the `linux` platform is also added by default. If no minimum deployment information is present, the `macOS` and `linux` platforms are added by default. If these defaults aren't what you need, you can specify exact values using a config file (see below).   
 
 ### Config Format
 

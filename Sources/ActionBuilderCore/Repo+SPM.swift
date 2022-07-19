@@ -31,6 +31,16 @@ extension Repo {
                     repo.platforms.insert(id)
                 }
             }
+
+            // default to macOS if nothing was specified
+            if repo.platforms.isEmpty {
+                repo.platforms.insert(Platform.ID.macOS)
+            }
+            
+            // if macOS is present, also try linux
+            if repo.platforms.contains(Platform.ID.macOS) {
+                repo.platforms.insert(Platform.ID.linux)
+            }
         }
         
         // extract compiler versions from the package if they weren't explicitly specified
@@ -42,8 +52,6 @@ extension Repo {
             }
         }
 
-        // extract owner
-        
         self = repo
     }
 
