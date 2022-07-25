@@ -32,7 +32,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/elegantchaos/Runner.git", from: "1.3.1"),
         .package(url: "https://github.com/elegantchaos/SemanticVersion.git", from: "1.1.0"),
-        .package(url: "https://github.com/elegantchaos/Versionator.git", from: "0.3.0"),
+        .package(url: "https://github.com/elegantchaos/Versionator.git", from: "1.0.0"),
         .package(url: "https://github.com/elegantchaos/XCTestExtensions.git", from: "1.4.7")
     ],
     
