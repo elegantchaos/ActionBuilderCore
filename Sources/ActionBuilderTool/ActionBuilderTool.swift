@@ -5,6 +5,7 @@
 
 import ActionBuilderCore
 import Foundation
+import SemanticVersion
 
 #if canImport(AppKit)
 import AppKit
@@ -36,8 +37,7 @@ import AppKit
             editSettings(for: repo, at: url)
         }
         
-        let version = CurrentVersion.git
-        let generator = Generator(name: "ActionBuilderTool", version: version, link: "https://github.com/elegantchaos/ActionBuilderCore")
+        let generator = Generator(name: "ActionBuilderTool", version: CurrentVersion.full, link: "https://github.com/elegantchaos/ActionBuilderCore")
         try updateWorkflow(for: repo, at: url, with: generator)
         
         if repo.header {
