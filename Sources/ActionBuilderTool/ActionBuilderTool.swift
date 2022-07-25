@@ -15,7 +15,9 @@ import AppKit
         let all = ProcessInfo.processInfo.arguments
         let args = all.filter({ !$0.starts(with: "--") })
         guard args.count == 2 else {
-            fatalError("Usage: \(args[0]) <options> <package>")
+            let name = URL(fileURLWithPath: args[0]).lastPathComponent
+            print("\n\nUsage: \(name) <options> <package>")
+            exit(1)
         }
         
         let url = URL(fileURLWithPath: args[1])
