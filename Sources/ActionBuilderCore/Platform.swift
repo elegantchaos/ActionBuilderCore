@@ -118,13 +118,13 @@ public class Platform: Identifiable {
                 let isRelease = config == .release
                 var enableDiscovery: [Compiler.ID] = [.swift52, .swift53, .swift54, .swift55]
                 if !isRelease { enableDiscovery.append(.swift51) }
-                let buildForTestingFlag = isRelease ? "-Xswiftc -enable-testing" : ""
-                let discoveryFlag = enableDiscovery.contains(compiler.id) ? "--enable-test-discovery" : ""
+                let buildForTestingFlag = isRelease ? " -Xswiftc -enable-testing" : ""
+                let discoveryFlag = enableDiscovery.contains(compiler.id) ? " --enable-test-discovery" : ""
                 yaml.append(
                     """
                     
                             - name: Test (\(config))
-                              run: \(pathFix)swift test --configuration \(config) \(buildForTestingFlag) \(discoveryFlag)
+                              run: \(pathFix)swift test --configuration \(config)\(buildForTestingFlag)\(discoveryFlag)
                     """
                 )
             }
