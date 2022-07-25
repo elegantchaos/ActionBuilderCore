@@ -8,14 +8,14 @@ final class ActionBuilderCoreTests: XCTestCase {
         let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
         let repo = try Repo(forPackage: examplePackage)
         XCTAssertEqual(repo.enabledCompilers.map { $0.id }, [.swift56, .swift57 ])
-        XCTAssertEqual(repo.enabledPlatforms.map { $0.id }, [.macOS])
+        XCTAssertEqual(repo.enabledPlatforms.map { $0.id }, [.linux, .macOS])
     }
 
     func testParsingPackageMultiPlatform() throws {
         let examplePackage = Bundle.module.url(forResource: "Example-multi", withExtension: "package")!
         let repo = try Repo(forPackage: examplePackage)
-        XCTAssertEqual(repo.compilers, [.swift56, .swift57])
-        XCTAssertEqual(repo.platforms, [.iOS, .macOS, .tvOS])
+        XCTAssertEqual(repo.compilers, [.swift56, .swiftLatest])
+        XCTAssertEqual(repo.platforms, [.iOS, .linux, .macOS, .tvOS])
     }
 
     func testParsingPackageConfigFile() throws {
@@ -25,7 +25,7 @@ final class ActionBuilderCoreTests: XCTestCase {
         XCTAssertEqual(repo.owner, "ConfigTestOwner")
         XCTAssertEqual(repo.compilers, [.swift55, .swiftNightly])
         XCTAssertEqual(repo.platforms, [.macOS, .linux])
-        XCTAssertTrue(repo.test)
+        XCTAssertFalse(repo.testMode, Repo.TestMode.test)
         XCTAssertFalse(repo.header)
         XCTAssertFalse(repo.uploadLogs)
         XCTAssertFalse(repo.postSlackNotification)

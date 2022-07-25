@@ -57,7 +57,7 @@ public class Platform: Identifiable {
 
     public func yaml(repo: Repo, compilers: [Compiler], configurations: [Configuration]) -> String {
         let package = repo.name
-        let test = repo.test
+        let shouldTest = repo.testMode != .build
         
         var yaml = ""
         var xcodeToolchain: String? = nil
@@ -83,11 +83,11 @@ public class Platform: Identifiable {
             }
             
             if subPlatforms.isEmpty {
-                job.append(swiftYAML(configurations: configurations, test: test, customToolchain: xcodeToolchain != nil, compiler: compiler))
+                job.append(swiftYAML(configurations: configurations, test: shouldTest, customToolchain: xcodeToolchain != nil, compiler: compiler))
             } else {
                 job.append(xcodebuildCommonYAML())
                 for platform in subPlatforms {
-                    job.append(platform.xcodebuildYAML(configurations: configurations, package: package, test: test, compiler: compiler))
+                    job.append(platform.xcodebuildYAML(configurations: configurations, package: package, test: shouldTest, compiler: compiler))
                 }
             }
             

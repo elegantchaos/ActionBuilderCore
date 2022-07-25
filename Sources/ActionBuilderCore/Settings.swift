@@ -35,7 +35,7 @@ public struct Settings: Codable {
         self.platforms = repo.platforms
         self.compilers = repo.compilers
         self.configurations = repo.configurations
-        self.test = repo.test
+        self.test = repo.testMode.asBool
         self.firstlast = repo.firstlast
         self.uploadLogs = repo.uploadLogs
         self.header = repo.header

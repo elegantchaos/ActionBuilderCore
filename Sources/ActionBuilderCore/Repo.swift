@@ -8,7 +8,7 @@ import Foundation
 public struct Repo: Equatable {
     public static let defaultOwner = "Unknown"
     public static let defaultWorkflow = "Tests"
-    public static let defaultTest = true
+    public static let defaultTest = TestMode.auto
     public static let defaultFirstLast = true
     public static let defaultPostSlackNotification = false
     public static let defaultUploadLogs = true
@@ -21,21 +21,21 @@ public struct Repo: Equatable {
     public var platforms: Set<Platform.ID>
     public var compilers: Set<Compiler.ID>
     public var configurations: Set<Configuration>
-    public var test: Bool
+    public var testMode: TestMode
     public let firstlast: Bool
     public let postSlackNotification: Bool
     public let uploadLogs: Bool
     public let header: Bool
 
     /// Initialise explicitly.
-    public init(name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = Self.defaultConfigurations, test: Bool = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast, postSlackNotification: Bool = Self.defaultPostSlackNotification, upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader) {
+    public init(name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [], compilers: [Compiler.ID] = [], configurations: [Configuration] = Self.defaultConfigurations, testMode: TestMode = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast, postSlackNotification: Bool = Self.defaultPostSlackNotification, upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader) {
         self.name = name
         self.owner = owner
         self.workflow = workflow
         self.platforms = Set(platforms)
         self.compilers = Set(compilers)
         self.configurations = Set(configurations)
-        self.test = test
+        self.testMode = testMode
         self.firstlast = firstlast
         self.postSlackNotification = postSlackNotification
         self.uploadLogs = upload
@@ -50,7 +50,7 @@ public struct Repo: Equatable {
         self.platforms = settings?.platforms ?? []
         self.compilers = settings?.compilers ?? []
         self.configurations = settings?.configurations ?? Set(Self.defaultConfigurations)
-        self.test = settings?.test ?? Self.defaultTest
+        self.testMode = TestMode(settings?.test)
         self.firstlast = settings?.firstlast ?? Self.defaultFirstLast
         self.uploadLogs = settings?.uploadLogs ?? Self.defaultUploadLogs
         self.header = settings?.header ?? Self.defaultHeader
@@ -98,4 +98,25 @@ public struct Repo: Equatable {
         }
     }
 
+    public enum TestMode {
+        case build
+        case test
+        case auto
+        
+        init(_ shouldTest: Bool?) {
+            switch shouldTest {
+                case false: self = .build
+                case true: self = .test
+                default: self = .auto
+            }
+        }
+        
+        var asBool: Bool? {
+            switch self {
+                case .test: return true
+                case .build: return false
+                case .auto: return nil
+            }
+        }
+    }
 }
