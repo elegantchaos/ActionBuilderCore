@@ -21,7 +21,7 @@ public struct Repo: Equatable {
     public var platforms: Set<Platform.ID>
     public var compilers: Set<Compiler.ID>
     public var configurations: Set<Configuration>
-    public let test: Bool
+    public var test: Bool
     public let firstlast: Bool
     public let postSlackNotification: Bool
     public let uploadLogs: Bool

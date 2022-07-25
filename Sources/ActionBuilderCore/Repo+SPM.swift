@@ -52,6 +52,12 @@ extension Repo {
             }
         }
 
+        // the build/test flag defaults to test
+        // downgrade it to build if we have no test targets
+        if repo.test && !package.hasTestTargets {
+            repo.test = false
+        }
+        
         self = repo
     }
 
