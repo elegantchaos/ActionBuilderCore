@@ -60,7 +60,7 @@ public struct Repo: Equatable {
     var enabledPlatforms: [Platform] {
         return Platform.platforms
             .filter { platforms.contains($0.id) }
-            .sorted { $0.id < $1.id }
+            .sorted { $0.name < $1.name }
     }
 
     var enabledCompilers: [Compiler] {
