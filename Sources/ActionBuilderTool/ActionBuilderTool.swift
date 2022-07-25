@@ -36,7 +36,8 @@ import AppKit
             editSettings(for: repo, at: url)
         }
         
-        let generator = Generator(name: "ActionBuilderTool", version: "1.0", link: "https://github.com/elegantchaos/ActionBuilderCore")
+        let version = CurrentVersion.git
+        let generator = Generator(name: "ActionBuilderTool", version: version, link: "https://github.com/elegantchaos/ActionBuilderCore")
         try updateWorkflow(for: repo, at: url, with: generator)
         
         if repo.header {
