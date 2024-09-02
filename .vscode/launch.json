@@ -1,0 +1,28 @@
+{
+  "configurations": [
+    {
+      "type": "swift-lldb",
+      "request": "launch",
+      "sourceLanguages": [
+        "swift"
+      ],
+      "args": [],
+      "cwd": "${workspaceFolder:ActionBuilderCore}",
+      "name": "Debug ActionBuilderTool",
+      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
+      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+    },
+    {
+      "type": "swift-lldb",
+      "request": "launch",
+      "sourceLanguages": [
+        "swift"
+      ],
+      "args": [],
+      "cwd": "${workspaceFolder:ActionBuilderCore}",
+      "name": "Release ActionBuilderTool",
+      "program": "${workspaceFolder:ActionBuilderCore}/.build/release/ActionBuilderTool",
+      "preLaunchTask": "swift: Build Release ActionBuilderTool"
+    }
+  ]
+}

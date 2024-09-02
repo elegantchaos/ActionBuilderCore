@@ -1,0 +1,8 @@
+{
+  "swift.actionAfterBuildError": "Do Nothing",
+  "swift.debugger.useDebugAdapterFromToolchain": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.tabSize": 2,
+  "editor.useTabStops": false
+}

@@ -1,12 +1,21 @@
 {
   "pins" : [
     {
-      "identity" : "matchable",
+      "identity" : "chaosbytestreams",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/elegantchaos/Matchable.git",
+      "location" : "https://github.com/elegantchaos/ChaosByteStreams",
       "state" : {
-        "revision" : "0f523c77bf4b0dbbdc0838b952262ed45fab17f8",
-        "version" : "1.0.6"
+        "revision" : "bb2be531b8b3d1410ba6b40a860b6bf8060e8fa3",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "chaostesting",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/ChaosTesting",
+      "state" : {
+        "revision" : "a7523f7678b8a6b5b8edccb05330f32317413979",
+        "version" : "1.0.1"
       }
     },
     {
@@ -14,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/elegantchaos/Runner",
       "state" : {
-        "revision" : "dc59f4b180905aa4c6e7b6ecb354664176793f40",
-        "version" : "1.3.1"
+        "revision" : "4695591be15ed365323fb0b130bd21545f0aa91e",
+        "version" : "2.0.6"
       }
     },
     {
@@ -28,12 +37,12 @@
       }
     },
     {
-      "identity" : "xctestextensions",
+      "identity" : "versionator",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/elegantchaos/XCTestExtensions",
+      "location" : "https://github.com/elegantchaos/Versionator",
       "state" : {
-        "revision" : "cb054eb122b7c8ed5b3dbbcb711c274b0d868f77",
-        "version" : "1.4.7"
+        "revision" : "6d1cdddce7990f660c4f3b96c5a24be8dcce9007",
+        "version" : "2.0.2"
       }
     }
   ],
