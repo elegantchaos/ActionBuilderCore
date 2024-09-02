@@ -34,7 +34,7 @@ let package = Package(
     .package(url: "https://github.com/elegantchaos/Runner.git", from: "2.0.6"),
     .package(url: "https://github.com/elegantchaos/SemanticVersion.git", from: "1.1.0"),
     .package(url: "https://github.com/elegantchaos/Versionator.git", from: "2.0.2"),
-    .package(url: "https://github.com/elegantchaos/ChaosTesting", from: "1.0.0"),
+    .package(url: "https://github.com/elegantchaos/ChaosTesting", from: "1.0.1"),
   ],
 
   targets: [

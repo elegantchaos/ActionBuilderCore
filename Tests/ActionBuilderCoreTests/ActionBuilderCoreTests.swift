@@ -8,7 +8,7 @@ import Testing
 func testParsingPackageMacPlatform() async throws {
   let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
   let repo = try await Repo(forPackage: examplePackage)
-  #expect(repo.enabledCompilers.map { $0.id } == [.swift56, .swift57])
+  #expect(repo.enabledCompilers.map { $0.id } == [.swift56, .latestRelease])
   #expect(repo.enabledPlatforms.map { $0.id } == [.linux, .macOS])
 }
 

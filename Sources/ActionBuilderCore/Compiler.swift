@@ -89,6 +89,21 @@ public final class Compiler: Identifiable, Sendable {
       .swift57, name: "Swift 5.7", short: "5.7", linux: "swiftlang/swift:nightly-5.7-bionic",
       mac: .toolchain(version: "13.4.1", branch: "swift-5.7-branch", image: "macos-12")),
 
+    // https://download.swift.org/development/xcode/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a-osx.pkg
+    Compiler(
+      .swift58, name: "Swift 5.8", short: "5.8", linux: "swiftlang/swift:nightly-5.8-bionic",
+      mac: .toolchain(version: "13.4.1", branch: "swift-5.8-branch", image: "macos-12")),
+
+    // https://download.swift.org/development/xcode/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a-osx.pkg
+    Compiler(
+      .swift59, name: "Swift 5.9", short: "5.9", linux: "swiftlang/swift:nightly-5.9-bionic",
+      mac: .toolchain(version: "13.4.1", branch: "swift-5.9-branch", image: "macos-12")),
+
+    // https://download.swift.org/development/xcode/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a-osx.pkg
+    Compiler(
+      .swift60, name: "Swift 6.0", short: "6.0", linux: "swiftlang/swift:nightly-6.0-bionic",
+      mac: .toolchain(version: "13.4.1", branch: "swift-6.0-branch", image: "macos-12")),
+
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(
       .swiftNightly, name: "Swift Development Nightly", short: "dev",

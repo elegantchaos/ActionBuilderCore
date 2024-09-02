@@ -8,28 +8,26 @@
 import PackageDescription
 
 let package = Package(
-    name: "ExamplePackage",
-    
-    platforms: [
-        .macOS(.v12)
-    ],
-    
-    products: [
-        .library(
-            name: "ExamplePackage",
-            targets: ["ExamplePackage"]
-        ),
-        
-    ],
+  name: "ExamplePackage",
 
-    dependencies: [
-    ],
+  platforms: [
+    .macOS(.v12)
+  ],
 
-    targets: [
-        .target(
-            name: "ExamplePackage",
-            dependencies: [
-            ]
-        ),
-    ]
+  products: [
+    .library(
+      name: "ExamplePackage",
+      targets: ["ExamplePackage"]
+    )
+
+  ],
+
+  dependencies: [],
+
+  targets: [
+    .target(
+      name: "ExamplePackage",
+      dependencies: []
+    )
+  ]
 )
