@@ -5,15 +5,15 @@
 
 import Foundation
 
-public enum Configuration: String, Codable, CaseIterable {
-    case debug
-    case release
+public enum Configuration: String, Codable, CaseIterable, Sendable {
+  case debug
+  case release
 
-    public var name: String {
-        return rawValue.capitalized
-    }
-    
-    public var xcodeID: String {
-        return rawValue.capitalized
-    }
+  public var name: String {
+    return rawValue.capitalized
+  }
+
+  public var xcodeID: String {
+    return rawValue.capitalized
+  }
 }

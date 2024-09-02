@@ -1,15 +1,16 @@
 import ChaosTesting
+import Foundation
 import Testing
 
 @testable import ActionBuilderCore
 
-// final class ActionBuilderCoreTests: XCTestCase {
-//     func testParsingPackageMacPlatform() throws {
-//         let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
-//         let repo = try Repo(forPackage: examplePackage)
-//         XCTAssertEqual(repo.enabledCompilers.map { $0.id }, [.swift56, .swift57 ])
-//         XCTAssertEqual(repo.enabledPlatforms.map { $0.id }, [.linux, .macOS])
-//     }
+@Test
+func testParsingPackageMacPlatform() async throws {
+  let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
+  let repo = try await Repo(forPackage: examplePackage)
+  #expect(repo.enabledCompilers.map { $0.id } == [.swift56, .swift57])
+  #expect(repo.enabledPlatforms.map { $0.id } == [.linux, .macOS])
+}
 
 //     func testParsingPackageMultiPlatform() throws {
 //         let examplePackage = Bundle.module.url(forResource: "Example-multi", withExtension: "package")!
