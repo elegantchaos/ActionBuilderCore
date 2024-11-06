@@ -101,8 +101,8 @@ public final class Compiler: Identifiable, Sendable {
 
     // https://download.swift.org/development/xcode/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a/swift-5.7-DEVELOPMENT-SNAPSHOT-2022-06-26-a-osx.pkg
     Compiler(
-      .swift60, name: "Swift 6.0", short: "6.0", linux: "swiftlang/swift:nightly-6.0-bionic",
-      mac: .toolchain(version: "13.4.1", branch: "swift-6.0-branch", image: "macos-12")),
+      .swift60, name: "Swift 6.0", short: "6.0", linux: "ubuntu-22.04",
+      mac: .xcode(version: "16.0.0", image: "macos-14")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(

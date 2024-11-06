@@ -39,7 +39,8 @@ public final class Platform: Identifiable, Sendable {
   public var label: String {
     if xcodeDestination == nil {
       return name
-    } else {
+    }
+    else {
       return "\(name)"
     }
   }
@@ -47,8 +48,8 @@ public final class Platform: Identifiable, Sendable {
   public func jobName(with compiler: Compiler) -> String {
     if !subPlatforms.isEmpty {
       switch compiler.mac {
-      case .xcode(let version, _), .toolchain(let version, _, _):
-        return "\(name) (\(compiler.name), Xcode \(version))"
+        case .xcode(let version, _), .toolchain(let version, _, _):
+          return "\(name) (\(compiler.name), Xcode \(version))"
       }
     }
 
@@ -75,23 +76,26 @@ public final class Platform: Identifiable, Sendable {
       commonYAML(&job)
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
-        toolchainYAML(&job, branch, version)
-      } else if let version = xcodeVersion {
-        xcodeYAML(&job, version)
-      } else {
-
+        selectToolchainYAML(&job, branch, version)
+      }
+      else if !subPlatforms.isEmpty, let version = xcodeVersion {
+        selectXcodeYAML(&job, version)
+      }
+      else {
+        selectSwiftYAML(&job, compiler: compiler)
       }
 
       if subPlatforms.isEmpty {
         job.append(
-          swiftYAML(
+          runSwiftYAML(
             configurations: configurations, test: shouldTest,
             customToolchain: xcodeToolchain != nil, compiler: compiler))
-      } else {
+      }
+      else {
         job.append(xcodebuildCommonYAML())
         for platform in subPlatforms {
           job.append(
-            platform.xcodebuildYAML(
+            platform.runXcodebuildYAML(
               configurations: configurations, package: package, test: shouldTest, compiler: compiler
             ))
         }
@@ -111,12 +115,25 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
-  fileprivate func swiftYAML(
+  fileprivate func selectSwiftYAML(
+    _ yaml: inout String, compiler: Compiler
+  ) {
+    yaml.append(
+      """
+
+              - name: Select Swift
+                uses: swift-actions/setup-swift@v2
+                with:
+                  swift-version: "\(compiler.short)"
+      """)
+  }
+
+  fileprivate func runSwiftYAML(
     configurations: [Configuration], test: Bool, customToolchain: Bool, compiler: Compiler
   ) -> String {
     var yaml = """
 
-              - name: Swift Version
+              - name: Check Swift Version
                 run: swift --version
       """
 
@@ -126,17 +143,20 @@ public final class Platform: Identifiable, Sendable {
         let isRelease = config == .release
         var enableDiscovery: [Compiler.ID] = [.swift52, .swift53, .swift54, .swift55]
         if !isRelease { enableDiscovery.append(.swift51) }
-        let buildForTestingFlag = isRelease ? " -Xswiftc -enable-testing" : ""
+        let buildForTestingFlag = isRelease ? " --enable-testing" : ""
         let discoveryFlag = enableDiscovery.contains(compiler.id) ? " --enable-test-discovery" : ""
         yaml.append(
           """
 
+                  - name: Build (\(config))
+                    run: \(pathFix)swift build --build-tests --configuration \(config)\(buildForTestingFlag)
                   - name: Test (\(config))
-                    run: \(pathFix)swift test --configuration \(config)\(buildForTestingFlag)\(discoveryFlag)
+                    run: \(pathFix)swift test --skip-build --configuration \(config)\(discoveryFlag)
           """
         )
       }
-    } else {
+    }
+    else {
       for config in configurations {
         yaml.append(
           """
@@ -163,7 +183,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
-  fileprivate func xcodebuildYAML(
+  fileprivate func runXcodebuildYAML(
     configurations: [Configuration], package: String, test: Bool, compiler: Compiler
   ) -> String {
     var yaml = ""
@@ -206,7 +226,8 @@ public final class Platform: Identifiable, Sendable {
           """
         )
       }
-    } else {
+    }
+    else {
       for config in configurations {
         let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
         yaml.append(
@@ -230,7 +251,7 @@ public final class Platform: Identifiable, Sendable {
       """
 
               - name: Upload Logs
-                uses: actions/upload-artifact@v1
+                uses: actions/upload-artifact@v4
                 if: always()
                 with:
                   name: logs
@@ -257,7 +278,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
-  fileprivate func toolchainYAML(_ yaml: inout String, _ branch: String, _ version: String) {
+  fileprivate func selectToolchainYAML(_ yaml: inout String, _ branch: String, _ version: String) {
     let download =
       """
                   branch="\(branch)"
@@ -289,11 +310,11 @@ public final class Platform: Identifiable, Sendable {
     )
   }
 
-  fileprivate func xcodeYAML(_ yaml: inout String, _ version: String) {
+  fileprivate func selectXcodeYAML(_ yaml: inout String, _ version: String) {
     yaml.append(
       """
 
-              - name: Xcode Version
+              - name: Select Xcode Version
                 run: |
                   ls -d /Applications/Xcode*
                   sudo xcode-select -s /Applications/Xcode_\(version).app
@@ -308,41 +329,40 @@ public final class Platform: Identifiable, Sendable {
     _ xcodeVersion: inout String?
   ) {
     switch id {
-    case .linux:
-      yaml.append(
-        """
-
-                runs-on: ubuntu-18.04
-                container: \(compiler.linux)
-        """
-      )
-
-    default:
-      let macosImage: String
-      switch compiler.mac {
-      case .xcode(let version, let image):
-        xcodeVersion = version
-        macosImage = image
-
-      case .toolchain(let version, let branch, let image):
-        xcodeVersion = version
-        xcodeToolchain = branch
-        macosImage = image
+      case .linux:
         yaml.append(
           """
 
-                  env:
-                      TOOLCHAINS: swift
+                  runs-on: ubuntu-22.04
           """
         )
-      }
 
-      yaml.append(
-        """
+      default:
+        let macosImage: String
+        switch compiler.mac {
+          case .xcode(let version, let image):
+            xcodeVersion = version
+            macosImage = image
 
-                runs-on: \(macosImage)
-        """
-      )
+          case .toolchain(let version, let branch, let image):
+            xcodeVersion = version
+            xcodeToolchain = branch
+            macosImage = image
+            yaml.append(
+              """
+
+                      env:
+                          TOOLCHAINS: swift
+              """
+            )
+        }
+
+        yaml.append(
+          """
+
+                  runs-on: \(macosImage)
+          """
+        )
 
     }
   }
@@ -353,7 +373,7 @@ public final class Platform: Identifiable, Sendable {
 
               steps:
               - name: Checkout
-                uses: actions/checkout@v1
+                uses: actions/checkout@v4
               - name: Make Logs Directory
                 run: mkdir logs
       """
