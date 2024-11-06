@@ -17,7 +17,7 @@ import SemanticVersion
     let args = all.filter({ !$0.starts(with: "--") })
     guard args.count == 2 else {
       let name = URL(fileURLWithPath: args[0]).lastPathComponent
-      print("\n\nUsage: \(name) <options> <package>")
+      print("\n\nUsage: \(name) <options> <package-path>")
       exit(1)
     }
 
@@ -78,7 +78,8 @@ import SemanticVersion
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let defaultSettings = try encoder.encode(Settings(from: repo))
         try defaultSettings.write(to: settingsURL)
-      } catch {
+      }
+      catch {
         print("Failed to create config file.\n\(error)")
       }
     }
