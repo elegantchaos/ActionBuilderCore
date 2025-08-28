@@ -6,18 +6,19 @@
       "args": [
         "${workspaceFolder}/../Versionator"
       ],
-      "name": "Debug ActionBuilderTool",
+      "name": "Debug with Versionator",
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
     },
     {
       "type": "swift",
       "request": "launch",
-      "args": [],
-      "cwd": "${workspaceFolder:ActionBuilderCore}",
-      "name": "Release ActionBuilderTool",
-      "program": "${workspaceFolder:ActionBuilderCore}/.build/release/ActionBuilderTool",
-      "preLaunchTask": "swift: Build Release ActionBuilderTool"
-    }
+      "args": [
+        "${workspaceFolder}/../ActionBuilderPlugin"
+      ],
+      "name": "Debug with ActionBuilderPlugin",
+      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
+      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+    },
   ]
 }
