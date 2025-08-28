@@ -122,7 +122,7 @@ public final class Platform: Identifiable, Sendable {
       """
 
               - name: Select Swift
-                uses: swift-actions/setup-swift@v2
+                uses: swift-actions/setup-swift@next
                 with:
                   swift-version: "\(compiler.short)"
       """)
@@ -143,13 +143,12 @@ public final class Platform: Identifiable, Sendable {
         let isRelease = config == .release
         var enableDiscovery: [Compiler.ID] = [.swift52, .swift53, .swift54, .swift55]
         if !isRelease { enableDiscovery.append(.swift51) }
-        let buildForTestingFlag = isRelease ? " --enable-testing" : ""
         let discoveryFlag = enableDiscovery.contains(compiler.id) ? " --enable-test-discovery" : ""
         yaml.append(
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build --build-tests --configuration \(config)\(buildForTestingFlag)
+                    run: \(pathFix)swift build --build-tests --configuration \(config)
                   - name: Test (\(config))
                     run: \(pathFix)swift test --skip-build --configuration \(config)\(discoveryFlag)
           """
