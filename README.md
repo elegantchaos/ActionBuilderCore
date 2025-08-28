@@ -42,11 +42,20 @@ If they aren't explicitly set in the configuration file, the code attempts to pi
 - the tool version of the manifest is used to determine the version of Swift to test against. 
 - the platform minimum deployment versions listed in the manifest are used to determine platforms to test against 
 
-If the package manifest includes a minimum deployment for `macOS`, the `linux` platform is also added by default. If no minimum deployment information is present, the `macOS` and `linux` platforms are added by default. If these defaults aren't what you need, you can specify exact values using a config file (see below).   
+If the package manifest includes a minimum deployment for `.custom("Ubuntu", ...)`, the `linux` platform is added. The version number specified in this minimum deployment is currently ignore, but may eventually be used to determine the version of the runner
+image to use for the `runs-on: ubuntu-` entry of the workflow job.
+
+If no minimum deployment information is present, the `macOS` and `linux` platforms are added by default. If these defaults aren't what you need, you can specify exact values using a config file (see below).   
 
 ### Config Format
 
-Here is an example of `.actionbuilder.json`:
+In an ideal world I'd like all of the configuration information that the tool requires to be extracted from the `Package.swift` file.
+
+However, there are some situations where you may want to customise the behaviour slightly.
+
+In this case you can add a `.actionbuilder.json` file at the root of the project.
+
+Here is an example:
 
 ```json
 {
