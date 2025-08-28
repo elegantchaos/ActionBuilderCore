@@ -113,7 +113,7 @@ public final class Compiler: Identifiable, Sendable {
       mac: .xcode(version: "16.3.0", image: "macos-15")),
 
     Compiler(
-      .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-22.04",
+      .swift62, name: "Swift 6.2", short: "6.2-snapshot", linux: "ubuntu-22.04",
       mac: .xcode(version: "26.0.0", image: "macos-15")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
