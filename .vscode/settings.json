@@ -1,8 +1,15 @@
 {
   "swift.actionAfterBuildError": "Do Nothing",
-  "swift.debugger.useDebugAdapterFromToolchain": true,
+  "swift.autoGenerateLaunchConfigurations": false,
+  "swift.sourcekit-lsp.backgroundIndexing": "auto",
+  "swift.backgroundCompilation": true,
+  "swift.showBuildStatus": "swiftStatus",
+  "[swift]": {
+    "editor.defaultFormatter": "swiftlang.swift-vscode"
+  },
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.tabSize": 2,
-  "editor.useTabStops": false
+  "editor.useTabStops": false,
+  "explorer.excludeGitIgnore": true,
 }

@@ -1,23 +1,18 @@
 {
   "configurations": [
     {
-      "type": "swift-lldb",
+      "type": "swift",
       "request": "launch",
-      "sourceLanguages": [
-        "swift"
+      "args": [
+        "${workspaceFolder}/../Versionator"
       ],
-      "args": [],
-      "cwd": "${workspaceFolder:ActionBuilderCore}",
       "name": "Debug ActionBuilderTool",
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
     },
     {
-      "type": "swift-lldb",
+      "type": "swift",
       "request": "launch",
-      "sourceLanguages": [
-        "swift"
-      ],
       "args": [],
       "cwd": "${workspaceFolder:ActionBuilderCore}",
       "name": "Release ActionBuilderTool",
