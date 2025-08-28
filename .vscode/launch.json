@@ -20,5 +20,15 @@
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
     },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [
+        "${workspaceFolder}/../Logger"
+      ],
+      "name": "Debug with Logger",
+      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
+      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+    },
   ]
 }
