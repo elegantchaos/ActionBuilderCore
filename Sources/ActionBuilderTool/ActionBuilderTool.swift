@@ -38,8 +38,11 @@ import SemanticVersion
     }
 
     let generator = Generator(
-      name: "ActionBuilderTool", version: VersionatorVersion.full,
-      link: "https://github.com/elegantchaos/ActionBuilderCore")
+      name: "ActionBuilderTool",
+      version: VersionatorVersion.full,
+      link: "https://github.com/elegantchaos/ActionBuilderPlugin"
+    )
+
     try updateWorkflow(for: repo, at: url, with: generator)
 
     if repo.header {
