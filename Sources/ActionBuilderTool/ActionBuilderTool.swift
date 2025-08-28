@@ -81,8 +81,7 @@ import SemanticVersion
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let defaultSettings = try encoder.encode(Settings(from: repo))
         try defaultSettings.write(to: settingsURL)
-      }
-      catch {
+      } catch {
         print("Failed to create config file.\n\(error)")
       }
     }
