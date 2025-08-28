@@ -6,20 +6,20 @@
     "spaces": 2
   },
   "indentConditionalCompilationBlocks": true,
-  "indentSwitchCaseLabels": false,
+  "indentSwitchCaseLabels": true,
   "lineBreakAroundMultilineExpressionChainComponents": false,
-  "lineBreakBeforeControlFlowKeywords": false,
+  "lineBreakBeforeControlFlowKeywords": true,
   "lineBreakBeforeEachArgument": false,
   "lineBreakBeforeEachGenericRequirement": false,
-  "lineLength": 100,
-  "maximumBlankLines": 1,
+  "lineLength": 160,
+  "maximumBlankLines": 2,
   "multiElementCollectionTrailingCommas": true,
   "noAssignmentInExpressions": {
     "allowedFunctions": [
       "XCTAssertNoThrow"
     ]
   },
-  "prioritizeKeepingFunctionOutputTogether": false,
+  "prioritizeKeepingFunctionOutputTogether": true,
   "respectsExistingLineBreaks": true,
   "rules": {
     "AllPublicDeclarationsHaveDocumentation": false,
