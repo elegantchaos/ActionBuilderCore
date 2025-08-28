@@ -21,9 +21,9 @@ public final class Platform: Identifiable, Sendable {
 
   public static let platforms = [
     Platform(.macOS, name: "macOS"),
-    Platform(.iOS, name: "iOS", xcodeDestination: "iPhone 11"),
-    Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV"),
-    Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 5 - 44mm"),
+    Platform(.iOS, name: "iOS", xcodeDestination: "iPhone 16"),
+    Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV 4K (3rd generation)"),
+    Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 10 (42mm)"),
     Platform(.linux, name: "Linux"),
   ]
 
@@ -39,8 +39,7 @@ public final class Platform: Identifiable, Sendable {
   public var label: String {
     if xcodeDestination == nil {
       return name
-    }
-    else {
+    } else {
       return "\(name)"
     }
   }
@@ -77,11 +76,9 @@ public final class Platform: Identifiable, Sendable {
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
-      }
-      else if !subPlatforms.isEmpty, let version = xcodeVersion {
+      } else if !subPlatforms.isEmpty, let version = xcodeVersion {
         selectXcodeYAML(&job, version)
-      }
-      else {
+      } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
 
@@ -90,8 +87,7 @@ public final class Platform: Identifiable, Sendable {
           runSwiftYAML(
             configurations: configurations, test: shouldTest,
             customToolchain: xcodeToolchain != nil, compiler: compiler))
-      }
-      else {
+      } else {
         job.append(xcodebuildCommonYAML())
         for platform in subPlatforms {
           job.append(
@@ -122,9 +118,9 @@ public final class Platform: Identifiable, Sendable {
       """
 
               - name: Select Swift
-                uses: swift-actions/setup-swift@next
+                uses: beeauvin/swiftly-swift@v1
                 with:
-                  swift-version: "\(compiler.short)"
+                  swift-version: "\(compiler.swiftlyName)"
       """)
   }
 
@@ -154,8 +150,7 @@ public final class Platform: Identifiable, Sendable {
           """
         )
       }
-    }
-    else {
+    } else {
       for config in configurations {
         yaml.append(
           """
@@ -225,8 +220,7 @@ public final class Platform: Identifiable, Sendable {
           """
         )
       }
-    }
-    else {
+    } else {
       for config in configurations {
         let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
         yaml.append(

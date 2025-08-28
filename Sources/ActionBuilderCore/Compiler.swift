@@ -16,13 +16,23 @@ public final class Compiler: Identifiable, Sendable {
   let short: String
   let linux: String
   let mac: XcodeMode
+  let isSnapshot: Bool
 
-  public init(_ id: ID, name: String, short: String, linux: String, mac: XcodeMode) {
+  public init(_ id: ID, name: String, short: String, linux: String, mac: XcodeMode, isSnapshot: Bool = false) {
     self.id = id
     self.name = name
     self.short = short
     self.linux = linux
     self.mac = mac
+    self.isSnapshot = isSnapshot
+  }
+
+  public var swiftlyName: String {
+    if isSnapshot {
+      return "\(name)-snapshot"
+    } else {
+      return name
+    }
   }
 
   func supportsTesting(on platform: Platform.ID) -> Bool {
@@ -113,8 +123,8 @@ public final class Compiler: Identifiable, Sendable {
       mac: .xcode(version: "16.3.0", image: "macos-15")),
 
     Compiler(
-      .swift62, name: "Swift 6.2", short: "6.2-snapshot", linux: "ubuntu-22.04",
-      mac: .xcode(version: "26.0.0", image: "macos-15")),
+      .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-22.04",
+      mac: .xcode(version: "26.0.0", image: "macos-15"), isSnapshot: true),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(
