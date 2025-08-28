@@ -29,9 +29,9 @@ public final class Compiler: Identifiable, Sendable {
 
   public var swiftlyName: String {
     if isSnapshot {
-      return "\(name)-snapshot"
+      return "\(short)-snapshot"
     } else {
-      return name
+      return short
     }
   }
 
