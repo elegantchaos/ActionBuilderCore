@@ -28,7 +28,7 @@ The exact steps that the workflow executes can be configured.
 These include: 
 
 - platforms to test, from: macOS, iOS, tvOS, watchOS, linux
-- swift versions to test against, from: 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, and the nightly build
+- swift versions to test against: Swift 5 (5.0 - 5.9), Swift 6 (6.0, 6.1), and the nightly build (currently 6.2)
 - the configuration to test: debug, release
 - whether to run tests or just build
 - whether to upload build logs
@@ -43,7 +43,7 @@ If they aren't explicitly set in the configuration file, the code attempts to pi
 - the tool version of the manifest is used to determine the version of Swift to test against. 
 - the platform minimum deployment versions listed in the manifest are used to determine platforms to test against 
 
-If the package manifest includes a minimum deployment for `.custom("Ubuntu", ...)`, the `linux` platform is added. The version number specified in this minimum deployment is currently ignore, but may eventually be used to determine the version of the runner
+If the package manifest includes a minimum deployment for `.custom("Ubuntu", ...)`, the `linux` platform is added. The version number specified in this minimum deployment is currently ignored, but may eventually be used to determine the version of the runner
 image to use for the `runs-on: ubuntu-` entry of the workflow job.
 
 If no minimum deployment information is present, the `macOS` and `linux` platforms are added by default. If these defaults aren't what you need, you can specify exact values using a config file (see below).   
