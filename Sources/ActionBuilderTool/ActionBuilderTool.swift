@@ -21,7 +21,8 @@ import SemanticVersion
       exit(1)
     }
 
-    let url = URL(fileURLWithPath: args[1])
+    let path = (args[1] as NSString).expandingTildeInPath
+    let url = URL(fileURLWithPath: path, isDirectory: true).resolvingSymlinksInPath()
     let repo = try await Repo(forPackage: url)
 
     let options = Set(all.filter({ $0.starts(with: "--") }))

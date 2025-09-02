@@ -11,7 +11,7 @@ let package = Package(
   name: "ActionBuilderCore",
 
   platforms: [
-    .macOS(.v12)
+    .macOS(.v13)
   ],
 
   products: [
