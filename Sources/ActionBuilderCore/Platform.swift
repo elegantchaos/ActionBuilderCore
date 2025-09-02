@@ -295,6 +295,7 @@ public final class Platform: Identifiable, Sendable {
                   sudo xcode-select -s /Applications/Xcode_\(version).app
                   xcodebuild -version
                   swift --version
+                  xcodebuild --downloadAllPlatforms
       """
     )
   }
