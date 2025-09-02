@@ -131,6 +131,7 @@ public final class Platform: Identifiable, Sendable {
                 run: swift --version
       """
 
+    let beautify = id == .macOS ? " | xcbeautify" : " --quiet"
     let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
     if test {
       for config in configurations {
@@ -138,9 +139,9 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build --configuration \(config)
+                    run: \(pathFix)swift build --configuration \(config)\(beautify)
                   - name: Test (\(config))
-                    run: \(pathFix)swift test --configuration \(config)
+                    run: \(pathFix)swift test --configuration \(config)\(beautify)
           """
         )
       }
@@ -363,6 +364,16 @@ public final class Platform: Identifiable, Sendable {
                 uses: actions/checkout@v4
       """
     )
+
+    if id == .macOS {
+      yaml.append(
+        """
+
+                - name: Install xcbeautify
+                  run: brew install xcbeautify
+        """
+      )
+    }
   }
 
   fileprivate func makeLogsYAML(_ yaml: inout String) {
