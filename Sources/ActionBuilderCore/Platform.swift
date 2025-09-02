@@ -139,8 +139,14 @@ public final class Platform: Identifiable, Sendable {
 
                   - name: Build (\(config))
                     run: \(pathFix)swift build --configuration \(config) --quiet
-                  - name: Test (\(config))
-                    run: \(pathFix)swift test --configuration \(config)\(beautify)
+                  - name: Test (\(config) XCTest)
+                    run: |
+                      set -o pipefail
+                      \(pathFix)swift test --disable-swift-testing --configuration \(config)\(beautify)
+                  - name: Test (\(config) Swift Testing)
+                    run: |
+                      set -o pipefail
+                      \(pathFix)swift test --disable-xctest --configuration \(config)\(beautify)
           """
         )
       }
@@ -150,7 +156,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build -c \(config)
+                    run: \(pathFix)swift build -c \(config) --quiet
           """
         )
       }
@@ -198,6 +204,7 @@ public final class Platform: Identifiable, Sendable {
                     run: |
                       source "setup.sh"
                       echo "Testing workspace $WORKSPACE scheme $SCHEME."
+                      set -o pipefail
                       xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --disable-logging --renderer github-actions
           """
         )
@@ -212,6 +219,7 @@ public final class Platform: Identifiable, Sendable {
                     run: |
                       source "setup.sh"
                       echo "Building workspace $WORKSPACE scheme $SCHEME."
+                      set -o pipefail
                       xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --disable-logging --renderer github-actions
           """
         )
