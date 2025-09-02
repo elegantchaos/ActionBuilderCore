@@ -62,8 +62,6 @@ func testYAMLmacOSSwift57() async {
             steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Make Logs Directory
-              run: mkdir logs
             - name: Select Swift
               uses: beeauvin/swiftly-swift@v1
               with:
@@ -74,12 +72,6 @@ func testYAMLmacOSSwift57() async {
               run: swift build --configuration release
             - name: Test (release)
               run: swift test --configuration release
-            - name: Upload Logs
-              uses: actions/upload-artifact@v4
-              if: always()
-              with:
-                name: logs
-                path: logs
 
     """
 
@@ -107,14 +99,14 @@ func testYAMLiOSSwift57() {
             steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Make Logs Directory
-              run: mkdir logs
             - name: Select Xcode Version
               run: |
                 ls -d /Applications/Xcode*
                 sudo xcode-select -s /Applications/Xcode_14.2.app
                 xcodebuild -version
                 swift --version
+            - name: Make Logs Directory
+              run: mkdir logs
             - name: XC Pretty
               run: sudo gem install xcpretty-travis-formatter
             - name: Detect Workspace & Scheme (iOS)
