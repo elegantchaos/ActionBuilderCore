@@ -63,6 +63,7 @@ public final class Platform: Identifiable, Sendable {
     var xcodeToolchain: String? = nil
     var xcodeVersion: String? = nil
 
+    let useLogs = repo.uploadLogs && !subPlatforms.isEmpty
     for compiler in compilers {
       var job =
         """
@@ -73,6 +74,9 @@ public final class Platform: Identifiable, Sendable {
 
       containerYAML(&job, compiler, &xcodeToolchain, &xcodeVersion)
       commonYAML(&job)
+      if useLogs {
+        makeLogsYAML(&job)
+      }
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
@@ -97,7 +101,7 @@ public final class Platform: Identifiable, Sendable {
         }
       }
 
-      if repo.uploadLogs {
+      if useLogs {
         uploadYAML(&job)
       }
 
@@ -363,6 +367,13 @@ public final class Platform: Identifiable, Sendable {
               steps:
               - name: Checkout
                 uses: actions/checkout@v4
+      """
+    )
+  }
+
+  fileprivate func makeLogsYAML(_ yaml: inout String) {
+    yaml.append(
+      """
               - name: Make Logs Directory
                 run: mkdir logs
       """

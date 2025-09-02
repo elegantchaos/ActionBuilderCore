@@ -15,17 +15,18 @@ import SemanticVersion
   static func main() async throws {
     let all = ProcessInfo.processInfo.arguments
     let args = all.filter({ !$0.starts(with: "--") })
-    guard args.count == 2 else {
-      let name = URL(fileURLWithPath: args[0]).lastPathComponent
-      print("\n\nUsage: \(name) <options> <package-path>")
-      exit(1)
+    let options = Set(all.filter({ $0.starts(with: "--") }))
+
+    let url: URL
+    if args.count < 2 {
+      url = URL.currentDirectory()
+    } else {
+      let path = (args[1] as NSString).expandingTildeInPath
+      url = URL(fileURLWithPath: path, isDirectory: true).resolvingSymlinksInPath()
     }
 
-    let path = (args[1] as NSString).expandingTildeInPath
-    let url = URL(fileURLWithPath: path, isDirectory: true).resolvingSymlinksInPath()
     let repo = try await Repo(forPackage: url)
 
-    let options = Set(all.filter({ $0.starts(with: "--") }))
     if options.contains("--create-config") {
       makeSettings(for: repo, at: url)
     }
@@ -41,7 +42,7 @@ import SemanticVersion
     let generator = Generator(
       name: "ActionBuilderTool",
       version: VersionatorVersion.full,
-      link: "https://github.com/elegantchaos/ActionBuilderPlugin"
+      link: "https://github.com/elegantchaos/ActionBuilderCore"
     )
 
     try updateWorkflow(for: repo, at: url, with: generator)
