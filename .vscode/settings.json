@@ -1,9 +1,7 @@
 {
-  "swift.actionAfterBuildError": "Do Nothing",
   "swift.autoGenerateLaunchConfigurations": false,
   "swift.sourcekit-lsp.backgroundIndexing": "auto",
   "swift.backgroundCompilation": true,
-  "swift.showBuildStatus": "swiftStatus",
   "[swift]": {
     "editor.defaultFormatter": "swiftlang.swift-vscode"
   },
@@ -11,5 +9,5 @@
   "editor.formatOnPaste": true,
   "editor.tabSize": 2,
   "editor.useTabStops": false,
-  "explorer.excludeGitIgnore": true,
+  "explorer.excludeGitIgnore": true
 }
