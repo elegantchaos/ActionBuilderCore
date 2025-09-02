@@ -144,9 +144,9 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build --build-tests --configuration \(config)
+                    run: \(pathFix)swift build --configuration \(config)
                   - name: Test (\(config))
-                    run: \(pathFix)swift test --skip-build --configuration \(config)\(discoveryFlag)
+                    run: \(pathFix)swift test --configuration \(config)\(discoveryFlag)
           """
         )
       }
