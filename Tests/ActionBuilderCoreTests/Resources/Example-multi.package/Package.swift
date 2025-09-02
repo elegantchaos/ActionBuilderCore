@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:6.0
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //  Created by Sam Deane on 04/07/22.
@@ -8,28 +8,26 @@
 import PackageDescription
 
 let package = Package(
-    name: "ExamplePackage",
-    
-    platforms: [
-        .macOS(.v12), .iOS(.v14), .tvOS(.v14)
-    ],
-    
-    products: [
-        .library(
-            name: "ExamplePackage",
-            targets: ["ExamplePackage"]
-        ),
-        
-    ],
+  name: "ExamplePackage",
 
-    dependencies: [
-    ],
+  platforms: [
+    .macOS(.v12), .iOS(.v14), .tvOS(.v14), .custom("Ubuntu", versionString: "20.04"),
+  ],
 
-    targets: [
-        .target(
-            name: "ExamplePackage",
-            dependencies: [
-            ]
-        ),
-    ]
+  products: [
+    .library(
+      name: "ExamplePackage",
+      targets: ["ExamplePackage"]
+    )
+
+  ],
+
+  dependencies: [],
+
+  targets: [
+    .target(
+      name: "ExamplePackage",
+      dependencies: []
+    )
+  ]
 )
