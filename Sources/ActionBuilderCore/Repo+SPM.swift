@@ -44,8 +44,12 @@ extension Repo {
     if repo.enabledCompilers.isEmpty {
       let version = SemanticVersion(package.toolsVersion._version)
       let swiftVersion = "swift\(version.major)\(version.minor)"
-      if let compiler = Compiler.ID(rawValue: swiftVersion) {
+      if !(version.isInvalid || version.isUnknown), let compiler = Compiler.ID(rawValue: swiftVersion) {
         repo.compilers = [compiler, .swiftLatest]
+      } else if swiftVersion < Compiler.ID.earliestRelease.rawValue {  // If the Swift version is too early, use the earliest we support.
+        repo.compilers = [.swift57, .swiftLatest]
+      } else {
+        repo.compilers = [.swiftLatest]
       }
     }
 

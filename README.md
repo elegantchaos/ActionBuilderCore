@@ -28,7 +28,7 @@ The exact steps that the workflow executes can be configured.
 These include: 
 
 - platforms to test, from: macOS, iOS, tvOS, watchOS, linux
-- swift versions to test against: Swift 5 (5.0 - 5.9), Swift 6 (6.0, 6.1), and the nightly build (currently 6.2)
+- swift versions to test against: 57, 5.8, 5.9, 5.10, 6.0, 6.1, the 6.2 snapshot and the main snapshot.
 - the configuration to test: debug, release
 - whether to run tests or just build
 - whether to upload build logs

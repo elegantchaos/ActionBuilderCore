@@ -50,77 +50,56 @@ public final class Compiler: Identifiable, Sendable {
   }
 
   public enum ID: String, Equatable, CaseIterable, Codable, Sendable {
-    case swift50
-    case swift51
-    case swift52
-    case swift53
-    case swift54
-    case swift55
-    case swift56
     case swift57
     case swift58
     case swift59
+    case swift510
     case swift60
     case swift61
     case swift62
 
+    /// symbolic ID which indicates the latest Swift version.
     case swiftLatest
+
+    /// symbolic ID which indicates the latest Swift nightly build.
     case swiftNightly
 
+    /// Actual ID of the earliest release we support.
+    static let earliestRelease = Self.swift57
+
+    /// Actual ID of the latest release we know about.
     static let latestRelease = Self.swift62
   }
 
+  /// All supported compilers, in order from oldest to newest.
   public static let compilers: [Compiler] = [
-    // See https://github.com/actions/virtual-environments for available Xcode versions.
-    // See https://swiftly.dev/swift-versions for Xcode/Swift version mapping.
-
-    Compiler(
-      .swift50, name: "Swift 5.0", short: "5.0", linux: "swift:5.0",
-      mac: .xcode(version: "11.2.1", image: "macos-10.15")),
-
-    Compiler(
-      .swift51, name: "Swift 5.1", short: "5.1", linux: "swift:5.1",
-      mac: .xcode(version: "11.3.1", image: "macos-10.15")),
-
-    Compiler(
-      .swift52, name: "Swift 5.2", short: "5.2", linux: "swift:5.2.3-bionic",
-      mac: .xcode(version: "11.7", image: "macos-11")),
-
-    Compiler(
-      .swift53, name: "Swift 5.3", short: "5.3", linux: "swift:5.3.3-bionic",
-      mac: .xcode(version: "12.4", image: "macos-11")),
-
-    Compiler(
-      .swift54, name: "Swift 5.4", short: "5.4", linux: "swift:5.4.2-bionic",
-      mac: .xcode(version: "12.5.1", image: "macos-11")),
-
-    Compiler(
-      .swift55, name: "Swift 5.5", short: "5.5", linux: "swift:5.5.3-bionic",
-      mac: .xcode(version: "13.0", image: "macos-11")),
-
-    Compiler(
-      .swift56, name: "Swift 5.6", short: "5.6", linux: "swift:5.6.2-bionic",
-      mac: .xcode(version: "13.4.1", image: "macos-12")),
+    // See https://github.com/actions/runner-images for available Xcode versions.
+    // See https://xcodereleases.com/ for Xcode/Swift version mapping.
 
     Compiler(
       .swift57, name: "Swift 5.7", short: "5.7", linux: "swiftlang/swift:nightly-5.7-bionic",
-      mac: .toolchain(version: "13.4.1", branch: "swift-5.7-branch", image: "macos-12")),
+      mac: .xcode(version: "14.2", image: "macos-13")),
 
     Compiler(
       .swift58, name: "Swift 5.8", short: "5.8", linux: "swiftlang/swift:nightly-5.8-bionic",
-      mac: .toolchain(version: "13.4.1", branch: "swift-5.8-branch", image: "macos-12")),
+      mac: .xcode(version: "14.3.1", image: "macos-13")),
 
     Compiler(
       .swift59, name: "Swift 5.9", short: "5.9", linux: "swiftlang/swift:nightly-5.9-bionic",
-      mac: .toolchain(version: "13.4.1", branch: "swift-5.9-branch", image: "macos-12")),
+      mac: .xcode(version: "15.2", image: "macos-13")),
+
+
+    Compiler(
+      .swift510, name: "Swift 5.10", short: "5.10", linux: "swiftlang/swift:nightly-5.10-bionic",
+      mac: .xcode(version: "15.4", image: "macos-14")),
 
     Compiler(
       .swift60, name: "Swift 6.0", short: "6.0", linux: "ubuntu-22.04",
-      mac: .xcode(version: "16.0.0", image: "macos-14")),
+      mac: .xcode(version: "16.2.0", image: "macos-14")),
 
     Compiler(
       .swift61, name: "Swift 6.1", short: "6.1", linux: "ubuntu-22.04",
-      mac: .xcode(version: "16.3.0", image: "macos-15")),
+      mac: .xcode(version: "16.4.0", image: "macos-15")),
 
     Compiler(
       .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-22.04",
@@ -130,6 +109,6 @@ public final class Compiler: Identifiable, Sendable {
     Compiler(
       .swiftNightly, name: "Swift Development Nightly", short: "dev",
       linux: "swiftlang/swift:nightly",
-      mac: .toolchain(version: "13.4.1", branch: "development", image: "macos-12")),
+      mac: .toolchain(version: "26.0.0", branch: "development", image: "macos-12")),
   ]
 }
