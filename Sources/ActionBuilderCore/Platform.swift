@@ -89,7 +89,6 @@ public final class Platform: Identifiable, Sendable {
             customToolchain: xcodeToolchain != nil, compiler: compiler))
       } else {
         makeLogsYAML(&job)
-        job.append(xcodebuildCommonYAML())
         for platform in subPlatforms {
           job.append(
             platform.runXcodebuildYAML(
@@ -131,7 +130,7 @@ public final class Platform: Identifiable, Sendable {
                 run: swift --version
       """
 
-    let beautify = id == .macOS ? " | xcbeautify" : " --quiet"
+    let beautify = id == .macOS ? " | xcbeautify --disable-logging --renderer github-actions" : " --quiet"
     let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
     if test {
       for config in configurations {
@@ -139,7 +138,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build --configuration \(config)\(beautify)
+                    run: \(pathFix)swift build --configuration \(config) --quiet
                   - name: Test (\(config))
                     run: \(pathFix)swift test --configuration \(config)\(beautify)
           """
@@ -157,18 +156,6 @@ public final class Platform: Identifiable, Sendable {
       }
     }
 
-    return yaml
-  }
-
-  fileprivate func xcodebuildCommonYAML() -> String {
-    var yaml = ""
-    yaml.append(
-      """
-
-              - name: XC Pretty
-                run: sudo gem install xcpretty-travis-formatter
-      """
-    )
     return yaml
   }
 
@@ -211,7 +198,7 @@ public final class Platform: Identifiable, Sendable {
                     run: |
                       source "setup.sh"
                       echo "Testing workspace $WORKSPACE scheme $SCHEME."
-                      xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcpretty
+                      xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --disable-logging --renderer github-actions
           """
         )
       }
@@ -225,7 +212,7 @@ public final class Platform: Identifiable, Sendable {
                     run: |
                       source "setup.sh"
                       echo "Building workspace $WORKSPACE scheme $SCHEME."
-                      xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcpretty
+                      xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --disable-logging --renderer github-actions
           """
         )
       }

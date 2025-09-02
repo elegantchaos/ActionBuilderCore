@@ -62,6 +62,8 @@ func testYAMLmacOSSwift57() async {
             steps:
             - name: Checkout
               uses: actions/checkout@v4
+            - name: Install xcbeautify
+              run: brew install xcbeautify
             - name: Select Swift
               uses: beeauvin/swiftly-swift@v1
               with:
@@ -69,9 +71,9 @@ func testYAMLmacOSSwift57() async {
             - name: Check Swift Version
               run: swift --version
             - name: Build (release)
-              run: swift build --configuration release
+              run: swift build --configuration release --quiet
             - name: Test (release)
-              run: swift test --configuration release
+              run: swift test --configuration release | xcbeautify --disable-logging --renderer github-actions
 
     """
 
@@ -107,8 +109,6 @@ func testYAMLiOSSwift57() {
                 swift --version
             - name: Make Logs Directory
               run: mkdir logs
-            - name: XC Pretty
-              run: sudo gem install xcpretty-travis-formatter
             - name: Detect Workspace & Scheme (iOS)
               run: |
                 WORKSPACE="testRepo.xcworkspace"
@@ -130,7 +130,7 @@ func testYAMLiOSSwift57() {
               run: |
                 source "setup.sh"
                 echo "Testing workspace $WORKSPACE scheme $SCHEME."
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone 16" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcpretty
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone 16" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --disable-logging --renderer github-actions
             - name: Upload Logs
               uses: actions/upload-artifact@v4
               if: always()
