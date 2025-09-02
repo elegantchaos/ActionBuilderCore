@@ -3,9 +3,7 @@
     {
       "type": "swift",
       "request": "launch",
-      "args": [
-        "${workspaceFolder}/../Versionator"
-      ],
+      "args": ["${workspaceFolder}/../Versionator"],
       "name": "Debug with Versionator",
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
@@ -13,9 +11,7 @@
     {
       "type": "swift",
       "request": "launch",
-      "args": [
-        "${workspaceFolder}/../ActionBuilderPlugin"
-      ],
+      "args": ["${workspaceFolder}/../ActionBuilderPlugin"],
       "name": "Debug with ActionBuilderPlugin",
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
@@ -23,12 +19,10 @@
     {
       "type": "swift",
       "request": "launch",
-      "args": [
-        "${workspaceFolder}/../Logger"
-      ],
+      "args": ["${workspaceFolder}/../Logger"],
       "name": "Debug with Logger",
       "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
       "preLaunchTask": "swift: Build Debug ActionBuilderTool"
-    },
+    }
   ]
 }
