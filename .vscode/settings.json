@@ -1,6 +1,7 @@
 {
   "swift.autoGenerateLaunchConfigurations": false,
   "swift.sourcekit-lsp.backgroundIndexing": "auto",
+  "swift.searchSubfoldersForPackages": false,
   "swift.backgroundCompilation": true,
   "[swift]": {
     "editor.defaultFormatter": "swiftlang.swift-vscode"
