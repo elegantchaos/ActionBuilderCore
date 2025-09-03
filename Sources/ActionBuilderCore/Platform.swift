@@ -14,6 +14,7 @@ public final class Platform: Identifiable, Sendable {
     case iOS
     case tvOS
     case watchOS
+    case visionOS
     case catalyst
     case linux
     case xcode
@@ -24,6 +25,7 @@ public final class Platform: Identifiable, Sendable {
     Platform(.iOS, name: "iOS", xcodeDestination: "iPhone 16"),
     Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV 4K (3rd generation)"),
     Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 10 (42mm)"),
+    Platform(.visionOS, name: "visionOS", xcodeDestination: "Apple Vision Pro"),
     Platform(.linux, name: "Linux"),
   ]
 
@@ -41,6 +43,17 @@ public final class Platform: Identifiable, Sendable {
       return name
     } else {
       return "\(name)"
+    }
+  }
+
+  /// Xcodebuild command to download support for this platform.
+  public var xcodePlatformDownloadCommand: String {
+    switch id {
+      case .macOS, .catalyst, .linux:
+        return ""
+
+      default:
+        return " xcodebuild -downloadPlatform \(id.rawValue)"
     }
   }
 
@@ -179,18 +192,18 @@ public final class Platform: Identifiable, Sendable {
                   WORKSPACE="\(package).xcworkspace"
                   if [[ ! -e "$WORKSPACE" ]]
                   then
-                  WORKSPACE="."
-                  GOTPACKAGE=$(xcodebuild -workspace . -list | (grep \(package)-Package || true))
-                  if [[ $GOTPACKAGE != "" ]]
-                  then
-                  SCHEME="\(package)-Package"
+                    WORKSPACE="."
+                    GOTPACKAGE=$(xcodebuild -workspace . -list | (grep \(package)-Package || true))
+                    if [[ $GOTPACKAGE != "" ]]
+                    then
+                      SCHEME="\(package)-Package"
+                    else
+                      SCHEME="\(package)"
+                    fi
                   else
-                  SCHEME="\(package)"
+                    SCHEME="\(package)-\(name)"
                   fi
-                  else
-                  SCHEME="\(package)-\(name)"
-                  fi
-                  echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
+                  echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME';\(xcodePlatformDownloadCommand)" > setup.sh
       """
     )
 
@@ -303,7 +316,6 @@ public final class Platform: Identifiable, Sendable {
                   sudo xcode-select -s /Applications/Xcode_\(version).app
                   xcodebuild -version
                   swift --version
-                  xcodebuild --downloadAllPlatforms
       """
     )
   }
