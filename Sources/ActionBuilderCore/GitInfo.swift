@@ -13,12 +13,12 @@ struct GitInfo: Codable {
 
   init(from url: URL) async throws {
     let spm = Runner(command: "git", cwd: url)
-    let output = try spm.run(["remote", "-v"])
-    try await output.throwIfFailed(Error.launchingGitFailed(url, await String(output.stderr)))
+    let output = spm.run(["remote", "-v"])
+    try await output.throwIfFailed(Error.launchingGitFailed(url, await output.stderr.string))
 
     // TODO: recode this using new regex syntax?
 
-    let chunks = await String(output.stdout).split(separator: "\t")
+    let chunks = await output.stdout.string.split(separator: "\t")
     guard chunks.count > 1 else {
       throw Error.failedGettingRemote(chunks)
     }

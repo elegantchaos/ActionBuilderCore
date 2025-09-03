@@ -16,12 +16,12 @@ struct PackageInfo: Codable {
 
   init(from url: URL) async throws {
     let spm = Runner(command: "swift", cwd: url)
-    let output = try spm.run(["package", "dump-package"])
+    let output = spm.run(["package", "dump-package"])
     try await output.throwIfFailed(
-      Error.launchingSwiftFailed(url, await String(output.stderr))
+      Error.launchingSwiftFailed(url, await output.stderr.string)
     )
 
-    let jsonData = await Data(output.stdout)
+    let jsonData = await output.stdout.data
     let decoder = JSONDecoder()
     self = try decoder.decode(PackageInfo.self, from: jsonData)
   }
