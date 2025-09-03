@@ -22,7 +22,7 @@ public final class Platform: Identifiable, Sendable {
 
   public static let platforms = [
     Platform(.macOS, name: "macOS"),
-    Platform(.iOS, name: "iOS", xcodeDestination: "iPhone 16"),
+    Platform(.iOS, name: "iOS", xcodeDestination: "iPhone SE (3rd generation)"),
     Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV 4K (3rd generation)"),
     Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 10 (42mm)"),
     Platform(.visionOS, name: "visionOS", xcodeDestination: "Apple Vision Pro"),
@@ -53,7 +53,8 @@ public final class Platform: Identifiable, Sendable {
         return ""
 
       default:
-        return " xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log"
+        return
+          " xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log; xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log"
     }
   }
 
@@ -108,7 +109,7 @@ public final class Platform: Identifiable, Sendable {
               configurations: configurations, package: package, test: shouldTest, compiler: compiler
             ))
         }
-        uploadYAML(&job)
+        uploadYAML(&job, compiler: compiler)
       }
 
       if repo.postSlackNotification {
@@ -148,19 +149,29 @@ public final class Platform: Identifiable, Sendable {
     if test {
       for config in configurations {
         yaml.append(
-          """
+          compiler.supportsSeparateTestMethods
+            ? """
 
-                  - name: Build (\(config))
-                    run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
-                  - name: Test (\(config) XCTest)
-                    run: |
-                      set -o pipefail
-                      \(pathFix)swift test --disable-swift-testing --configuration \(config)\(beautify)
-                  - name: Test (\(config) Swift Testing)
-                    run: |
-                      set -o pipefail
-                      \(pathFix)swift test --disable-xctest --configuration \(config)\(beautify)
-          """
+                    - name: Build (\(config))
+                      run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
+                    - name: Test (\(config) XCTest)
+                      run: |
+                        set -o pipefail
+                        \(pathFix)swift test --disable-swift-testing --configuration \(config)\(beautify)
+                    - name: Test (\(config) Swift Testing)
+                      run: |
+                        set -o pipefail
+                        \(pathFix)swift test --disable-xctest --configuration \(config)\(beautify)
+            """
+            : """
+
+                    - name: Build (\(config))
+                      run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
+                    - name: Test (\(config))
+                      run: |
+                        set -o pipefail
+                        \(pathFix)swift test --configuration \(config)\(beautify)
+            """
         )
       }
     } else {
@@ -242,7 +253,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
-  fileprivate func uploadYAML(_ yaml: inout String) {
+  fileprivate func uploadYAML(_ yaml: inout String, compiler: Compiler) {
     yaml.append(
       """
 
@@ -250,7 +261,7 @@ public final class Platform: Identifiable, Sendable {
                 uses: actions/upload-artifact@v4
                 if: always()
                 with:
-                  name: logs
+                  name: \(id)-\(compiler.id)-logs
                   path: logs
       """
     )

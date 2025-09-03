@@ -27,6 +27,17 @@ public final class Compiler: Identifiable, Sendable {
     self.isSnapshot = isSnapshot
   }
 
+  /// Does the compiler support the --disable-swift-testing and --disable-xctest flags?
+  public var supportsSeparateTestMethods: Bool {
+    switch id {
+      case .swift57, .swift58, .swift59, .swift510:
+        return false
+      default:
+        return true
+    }
+  }
+
+  /// The quiet flag to use. Earlier compilers don't support --quiet.
   public var quietFlag: String {
     switch id {
       case .swift57, .swift58:
