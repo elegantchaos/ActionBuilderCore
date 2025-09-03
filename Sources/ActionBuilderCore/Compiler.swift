@@ -27,6 +27,15 @@ public final class Compiler: Identifiable, Sendable {
     self.isSnapshot = isSnapshot
   }
 
+  public var quietFlag: String {
+    switch id {
+      case .swift57, .swift58, .swift59:
+        return ""
+      default:
+        return " --quiet"
+    }
+  }
+
   public var swiftlyName: String {
     if isSnapshot {
       return "\(short)-snapshot"

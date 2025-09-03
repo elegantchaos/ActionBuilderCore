@@ -74,7 +74,7 @@ func testYAMLmacOSSwift57() async throws {
             - name: Check Swift Version
               run: swift --version
             - name: Build (release)
-              run: swift build --configuration release --quiet
+              run: swift build --configuration release
             - name: Test (release XCTest)
               run: |
                 set -o pipefail

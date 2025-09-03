@@ -143,7 +143,7 @@ public final class Platform: Identifiable, Sendable {
                 run: swift --version
       """
 
-    let beautify = id == .macOS ? " | xcbeautify --quiet --disable-logging --renderer github-actions" : " --quiet"
+    let beautify = id == .macOS ? " | xcbeautify --quiet --disable-logging --renderer github-actions" : compiler.quietFlag
     let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
     if test {
       for config in configurations {
@@ -151,7 +151,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build --configuration \(config) --quiet
+                    run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
                   - name: Test (\(config) XCTest)
                     run: |
                       set -o pipefail
@@ -169,7 +169,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build -c \(config) --quiet
+                    run: \(pathFix)swift build -c \(config)\(compiler.quietFlag)
           """
         )
       }
