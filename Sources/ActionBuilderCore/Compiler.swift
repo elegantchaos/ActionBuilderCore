@@ -67,8 +67,11 @@ public final class Compiler: Identifiable, Sendable {
     /// Actual ID of the earliest release we support.
     static let earliestRelease = Self.swift57
 
-    /// Actual ID of the latest release we know about.
-    static let latestRelease = Self.swift62
+    /// Actual ID of the latest fullrelease we know about.
+    static let latestRelease = Self.swift61
+
+    /// Actual ID of the latest snapshot release we know about.
+    static let latestSnapshotRelease = Self.swift62
   }
 
   /// All supported compilers, in order from oldest to newest.
