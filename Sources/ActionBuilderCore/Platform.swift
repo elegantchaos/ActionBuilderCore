@@ -53,7 +53,7 @@ public final class Platform: Identifiable, Sendable {
         return ""
 
       default:
-        return " xcodebuild -downloadPlatform \(id.rawValue)"
+        return " xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log"
     }
   }
 
@@ -86,6 +86,7 @@ public final class Platform: Identifiable, Sendable {
 
       containerYAML(&job, compiler, &xcodeToolchain, &xcodeVersion)
       commonYAML(&job)
+      makeLogsYAML(&job)
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
@@ -101,7 +102,6 @@ public final class Platform: Identifiable, Sendable {
             configurations: configurations, test: shouldTest,
             customToolchain: xcodeToolchain != nil, compiler: compiler))
       } else {
-        makeLogsYAML(&job)
         for platform in subPlatforms {
           job.append(
             platform.runXcodebuildYAML(
@@ -143,7 +143,7 @@ public final class Platform: Identifiable, Sendable {
                 run: swift --version
       """
 
-    let beautify = id == .macOS ? " | xcbeautify --disable-logging --renderer github-actions" : " --quiet"
+    let beautify = id == .macOS ? " | xcbeautify --quiet --disable-logging --renderer github-actions" : " --quiet"
     let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
     if test {
       for config in configurations {
@@ -218,7 +218,7 @@ public final class Platform: Identifiable, Sendable {
                       source "setup.sh"
                       echo "Testing workspace $WORKSPACE scheme $SCHEME."
                       set -o pipefail
-                      xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --disable-logging --renderer github-actions
+                      xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
       }
@@ -233,7 +233,7 @@ public final class Platform: Identifiable, Sendable {
                       source "setup.sh"
                       echo "Building workspace $WORKSPACE scheme $SCHEME."
                       set -o pipefail
-                      xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --disable-logging --renderer github-actions
+                      xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
       }
@@ -295,7 +295,7 @@ public final class Platform: Identifiable, Sendable {
               - name: Install Toolchain
                 run: |
       \(download)
-                  ls -d /Applications/Xcode*
+                  ls -d /Applications/Xcode* > logs/xcode-versions.log
                   sudo xcode-select -s /Applications/Xcode_\(version).app
                   swift --version
               - name: Xcode Version
@@ -312,7 +312,7 @@ public final class Platform: Identifiable, Sendable {
 
               - name: Select Xcode Version
                 run: |
-                  ls -d /Applications/Xcode*
+                  ls -d /Applications/Xcode* > logs/xcode-versions.log
                   sudo xcode-select -s /Applications/Xcode_\(version).app
                   xcodebuild -version
                   swift --version
