@@ -29,7 +29,7 @@ public final class Compiler: Identifiable, Sendable {
 
   public var quietFlag: String {
     switch id {
-      case .swift57, .swift58, .swift59:
+      case .swift57, .swift58:
         return ""
       default:
         return " --quiet"

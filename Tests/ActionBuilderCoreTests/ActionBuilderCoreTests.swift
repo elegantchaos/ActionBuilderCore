@@ -71,7 +71,7 @@ func testYAMLmacOSSwift57() async throws {
               uses: beeauvin/swiftly-swift@v1
               with:
                 swift-version: "5.7"
-            - name: Check Swift Version
+            - name: Swift Version
               run: swift --version
             - name: Build (release)
               run: swift build --configuration release

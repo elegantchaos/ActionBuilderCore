@@ -139,7 +139,7 @@ public final class Platform: Identifiable, Sendable {
   ) -> String {
     var yaml = """
 
-              - name: Check Swift Version
+              - name: Swift Version
                 run: swift --version
       """
 
