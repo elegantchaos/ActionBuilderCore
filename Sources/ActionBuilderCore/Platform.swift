@@ -373,7 +373,7 @@ public final class Platform: Identifiable, Sendable {
       """
     )
 
-    if id == .macOS {
+    if (id == .macOS) || !subPlatforms.isEmpty {
       yaml.append(
         """
 

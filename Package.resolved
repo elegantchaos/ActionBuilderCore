@@ -1,5 +1,5 @@
 {
-  "originHash" : "993f33fab95866ddc539f0bf9229fec7e41ecf62443e4609472c61520d88e2dd",
+  "originHash" : "a0bb81eb536ebe235bc1cc4a25da9215b36d55bdc86279fcd8b8198e9ca19d35",
   "pins" : [
     {
       "identity" : "chaosbytestreams",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "a7523f7678b8a6b5b8edccb05330f32317413979",
         "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "matchable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/elegantchaos/Matchable",
+      "state" : {
+        "revision" : "d53e807009960aafbd54f6229c2542f906628b38",
+        "version" : "1.0.7"
       }
     },
     {
@@ -42,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/elegantchaos/Versionator",
       "state" : {
-        "revision" : "f67fae2e7c4da26f768f622ab68cbdff409c90f6",
-        "version" : "2.0.6"
+        "revision" : "ea5bf22cecbc68b889b49ac35a8a9aaf7bdbed72",
+        "version" : "2.0.7"
       }
     }
   ],
