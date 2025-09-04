@@ -48,14 +48,36 @@ public final class Platform: Identifiable, Sendable {
 
   /// Xcodebuild command to download support for this platform.
   public var xcodePlatformDownloadCommand: String {
+    let platform: String
+    let name: String
+
     switch id {
-      case .macOS, .catalyst, .linux:
+      case .macOS, .catalyst, .linux, .xcode:
         return ""
 
-      default:
-        return
-          " xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log; xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log"
+      case .iOS:
+        platform = "iOS Simulator"
+        name = "iPhone"
+
+      case .tvOS:
+        platform = "tvOS Simulator"
+        name = "Apple TV"
+
+      case .watchOS:
+        platform = "watchOS Simulator"
+        name = "Apple Watch"
+      case .visionOS:
+        platform = "visionOS Simulator"
+        name = "Apple Vision"
     }
+
+    return
+      """
+                  xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
+                  xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
+                  DESTINATION=$(cat logs/destinations-\(id.rawValue).log | grep "platform:\(platform)" | grep "name:\(name)" | head -n 1 | awk -F" }" '{print$1}' | awk -F"name:" '{print$2}')
+      """
+
   }
 
   public func jobName(with compiler: Compiler) -> String {
@@ -194,7 +216,15 @@ public final class Platform: Identifiable, Sendable {
   ) -> String {
     var yaml = ""
     let destinationName = xcodeDestination ?? ""
-    let destination = destinationName.isEmpty ? "" : "-destination \"name=\(destinationName)\""
+    let destination = destinationName.isEmpty ? "" : "-destination \"$DESTINATION\""
+
+    let setup = """
+                  set -o pipefail
+                  source "setup.sh"
+      \(xcodePlatformDownloadCommand)
+      """
+
+
     yaml.append(
       """
 
@@ -214,7 +244,7 @@ public final class Platform: Identifiable, Sendable {
                   else
                     SCHEME="\(package)-\(name)"
                   fi
-                  echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME';\(xcodePlatformDownloadCommand)" > setup.sh
+                  echo "export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
       """
     )
 
@@ -226,9 +256,8 @@ public final class Platform: Identifiable, Sendable {
 
                   - name: Test (\(name) \(config.name))
                     run: |
-                      source "setup.sh"
-                      echo "Testing workspace $WORKSPACE scheme $SCHEME."
-                      set -o pipefail
+          \(setup)
+                      echo "Testing workspace $WORKSPACE scheme $SCHEME on $DESTINATION."
                       xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
@@ -241,9 +270,8 @@ public final class Platform: Identifiable, Sendable {
 
                   - name: Build (\(name) \(config))
                     run: |
-                      source "setup.sh"
+          \(setup)
                       echo "Building workspace $WORKSPACE scheme $SCHEME."
-                      set -o pipefail
                       xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
