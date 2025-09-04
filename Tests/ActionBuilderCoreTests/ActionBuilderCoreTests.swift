@@ -75,14 +75,10 @@ func testYAMLmacOSSwift57() async throws {
               run: swift --version
             - name: Build (release)
               run: swift build --configuration release
-            - name: Test (release XCTest)
+            - name: Test (release)
               run: |
                 set -o pipefail
-                swift test --disable-swift-testing --configuration release | xcbeautify --quiet --disable-logging --renderer github-actions
-            - name: Test (release Swift Testing)
-              run: |
-                set -o pipefail
-                swift test --disable-xctest --configuration release | xcbeautify --quiet --disable-logging --renderer github-actions
+                swift test --configuration release | xcbeautify --quiet --disable-logging --renderer github-actions
 
     """
 
@@ -136,18 +132,18 @@ func testYAMLiOSSwift57() throws {
                 else
                   SCHEME="testRepo-iOS"
                 fi
-                echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'; xcodebuild -downloadPlatform iOS > logs/download-iOS.log" > setup.sh
+                echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'; xcodebuild -downloadPlatform iOS > logs/download-iOS.log; xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log" > setup.sh
             - name: Test (iOS Release)
               run: |
                 source "setup.sh"
                 echo "Testing workspace $WORKSPACE scheme $SCHEME."
                 set -o pipefail
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone 16" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone SE (3rd generation)" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
               uses: actions/upload-artifact@v4
               if: always()
               with:
-                name: logs
+                name: xcode-swift57-logs
                 path: logs
 
     """
