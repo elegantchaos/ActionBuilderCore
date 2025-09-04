@@ -7,7 +7,7 @@ public final class Platform: Identifiable, Sendable {
   public let id: ID
   public let name: String
   public let subPlatforms: [Platform]
-  public let xcodeDestination: String?
+  public let needsDestination: Bool
 
   public enum ID: String, Codable, CaseInsensitiveRawRepresentable, Sendable {
     case macOS
@@ -22,28 +22,20 @@ public final class Platform: Identifiable, Sendable {
 
   public static let platforms = [
     Platform(.macOS, name: "macOS"),
-    Platform(.iOS, name: "iOS", xcodeDestination: "iPhone SE (3rd generation)"),
-    Platform(.tvOS, name: "tvOS", xcodeDestination: "Apple TV 4K (3rd generation)"),
-    Platform(.watchOS, name: "watchOS", xcodeDestination: "Apple Watch Series 10 (42mm)"),
-    Platform(.visionOS, name: "visionOS", xcodeDestination: "Apple Vision Pro"),
+    Platform(.iOS, name: "iOS", needsDestination: true),
+    Platform(.tvOS, name: "tvOS", needsDestination: true),
+    Platform(.watchOS, name: "watchOS", needsDestination: true),
+    Platform(.visionOS, name: "visionOS", needsDestination: true),
     Platform(.linux, name: "Linux"),
   ]
 
   public init(
-    _ id: ID, name: String, xcodeDestination: String? = nil, subPlatforms: [Platform] = []
+    _ id: ID, name: String, needsDestination: Bool = false, subPlatforms: [Platform] = []
   ) {
     self.id = id
     self.name = name
-    self.xcodeDestination = xcodeDestination
+    self.needsDestination = needsDestination
     self.subPlatforms = subPlatforms
-  }
-
-  public var label: String {
-    if xcodeDestination == nil {
-      return name
-    } else {
-      return "\(name)"
-    }
   }
 
   /// Xcodebuild command to download support for this platform.
@@ -215,8 +207,7 @@ public final class Platform: Identifiable, Sendable {
     configurations: [Configuration], package: String, test: Bool, compiler: Compiler
   ) -> String {
     var yaml = ""
-    let destinationName = xcodeDestination ?? ""
-    let destination = destinationName.isEmpty ? "" : "-destination \"$DESTINATION\""
+    let destination = needsDestination ? "-destination \"name=$DESTINATION\"" : ""
 
     let setup = """
                   set -o pipefail
