@@ -132,13 +132,16 @@ func testYAMLiOSSwift57() throws {
                 else
                   SCHEME="testRepo-iOS"
                 fi
-                echo "set -o pipefail; export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'; xcodebuild -downloadPlatform iOS > logs/download-iOS.log; xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log" > setup.sh
+                echo "export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
             - name: Test (iOS Release)
               run: |
-                source "setup.sh"
-                echo "Testing workspace $WORKSPACE scheme $SCHEME."
                 set -o pipefail
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=iPhone SE (3rd generation)" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
+                source "setup.sh"
+                xcodebuild -downloadPlatform iOS > logs/download-iOS.log
+                xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
+                DESTINATION=$(cat logs/destinations-iOS.log | grep "platform:iOS Simulator" | grep "name:iPhone" | head -n 1 | awk -F" }" '{print$1}' | awk -F"name:" '{print$2}')
+                echo "Testing workspace $WORKSPACE scheme $SCHEME on $DESTINATION."
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=$DESTINATION" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
               uses: actions/upload-artifact@v4
               if: always()
