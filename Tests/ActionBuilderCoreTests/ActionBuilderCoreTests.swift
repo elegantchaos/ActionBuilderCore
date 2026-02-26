@@ -68,7 +68,7 @@ func testYAMLmacOSSwift57() async throws {
             - name: Make Logs Directory
               run: mkdir logs
             - name: Select Swift
-              uses: beeauvin/swiftly-swift@v1
+              uses: swift-actions/setup-swift@v2
               with:
                 swift-version: "5.7"
             - name: Swift Version
@@ -101,7 +101,7 @@ func testYAMLiOSSwift57() throws {
     on: [push, pull_request]
     jobs:
         xcode-swift57:
-            name: iOS (Swift 5.7, Xcode 14.2)
+            name: iOS (Swift 5.7, Xcode matching Swift 5.7)
             runs-on: macos-13
             steps:
             - name: Checkout
@@ -110,10 +110,45 @@ func testYAMLiOSSwift57() throws {
               run: brew install xcbeautify
             - name: Make Logs Directory
               run: mkdir logs
-            - name: Select Xcode Version
+            - name: Resolve Xcode Version
+              id: resolve-xcode
               run: |
+                REQUESTED_SWIFT="5.7"
                 ls -d /Applications/Xcode* > logs/xcode-versions.log
-                sudo xcode-select -s /Applications/Xcode_14.2.app
+                FOUND_XCODE=""
+                while read -r APP
+                do
+                  DEV_DIR="$APP/Contents/Developer"
+                  SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
+                  XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
+                  if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
+                  then
+                    FOUND_XCODE="$XCODE_VERSION"
+                    break
+                  fi
+                done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+
+                if [[ "$FOUND_XCODE" == "" ]]
+                then
+                  echo "No installed Xcode matched Swift $REQUESTED_SWIFT."
+                  echo "Detected toolchains:"
+                  while read -r APP
+                  do
+                    DEV_DIR="$APP/Contents/Developer"
+                    XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
+                    SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
+                    echo "  Xcode $XCODE_VERSION -> Swift $SWIFT_VERSION"
+                  done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+                  exit 1
+                fi
+
+                echo "version=$FOUND_XCODE" >> "$GITHUB_OUTPUT"
+            - name: Select Xcode Version
+              uses: maxim-lobanov/setup-xcode@v1
+              with:
+                xcode-version: ${{ steps.resolve-xcode.outputs.version }}
+            - name: Xcode Version
+              run: |
                 xcodebuild -version
                 swift --version
             - name: Detect Workspace & Scheme (iOS)

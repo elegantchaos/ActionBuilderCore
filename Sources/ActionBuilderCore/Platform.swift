@@ -76,7 +76,8 @@ public final class Platform: Identifiable, Sendable {
     if !subPlatforms.isEmpty {
       switch compiler.mac {
         case .xcode(let version, _), .toolchain(let version, _, _):
-          return "\(name) (\(compiler.name), Xcode \(version))"
+          let xcodeName = compiler.id == .swiftNightly ? "Xcode \(version)" : "Xcode matching Swift \(compiler.short)"
+          return "\(name) (\(compiler.name), \(xcodeName))"
       }
     }
 
@@ -105,8 +106,8 @@ public final class Platform: Identifiable, Sendable {
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
-      } else if !subPlatforms.isEmpty, let version = xcodeVersion {
-        selectXcodeYAML(&job, version)
+      } else if !subPlatforms.isEmpty {
+        selectXcodeYAML(&job, compiler: compiler)
       } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
@@ -143,7 +144,7 @@ public final class Platform: Identifiable, Sendable {
       """
 
               - name: Select Swift
-                uses: beeauvin/swiftly-swift@v1
+                uses: swift-actions/setup-swift@v2
                 with:
                   swift-version: "\(compiler.swiftlyName)"
       """)
@@ -322,11 +323,14 @@ public final class Platform: Identifiable, Sendable {
     yaml.append(
       """
 
+              - name: Select Xcode Version
+                uses: maxim-lobanov/setup-xcode@v1
+                with:
+                  xcode-version: "\(version)"
               - name: Install Toolchain
                 run: |
       \(download)
                   ls -d /Applications/Xcode* > logs/xcode-versions.log
-                  sudo xcode-select -s /Applications/Xcode_\(version).app
                   swift --version
               - name: Xcode Version
                 run: |
@@ -336,14 +340,49 @@ public final class Platform: Identifiable, Sendable {
     )
   }
 
-  fileprivate func selectXcodeYAML(_ yaml: inout String, _ version: String) {
+  fileprivate func selectXcodeYAML(_ yaml: inout String, compiler: Compiler) {
     yaml.append(
       """
 
-              - name: Select Xcode Version
+              - name: Resolve Xcode Version
+                id: resolve-xcode
                 run: |
+                  REQUESTED_SWIFT="\(compiler.short)"
                   ls -d /Applications/Xcode* > logs/xcode-versions.log
-                  sudo xcode-select -s /Applications/Xcode_\(version).app
+                  FOUND_XCODE=""
+                  while read -r APP
+                  do
+                    DEV_DIR="$APP/Contents/Developer"
+                    SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
+                    XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
+                    if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
+                    then
+                      FOUND_XCODE="$XCODE_VERSION"
+                      break
+                    fi
+                  done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+
+                  if [[ "$FOUND_XCODE" == "" ]]
+                  then
+                    echo "No installed Xcode matched Swift $REQUESTED_SWIFT."
+                    echo "Detected toolchains:"
+                    while read -r APP
+                    do
+                      DEV_DIR="$APP/Contents/Developer"
+                      XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
+                      SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
+                      echo "  Xcode $XCODE_VERSION -> Swift $SWIFT_VERSION"
+                    done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+                    exit 1
+                  fi
+
+                  echo "version=$FOUND_XCODE" >> "$GITHUB_OUTPUT"
+              - name: Select Xcode Version
+                uses: maxim-lobanov/setup-xcode@v1
+                with:
+                  xcode-version: ${{ steps.resolve-xcode.outputs.version }}
+              - name: Xcode Version
+                run: |
                   xcodebuild -version
                   swift --version
       """
