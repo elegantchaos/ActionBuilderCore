@@ -74,11 +74,35 @@ func testYAMLmacOSSwift57() async throws {
             - name: Swift Version
               run: swift --version
             - name: Build (release)
-              run: swift build --configuration release
+              run: |
+                LOG="logs/swift-build-release.log"
+                if swift build --configuration release >"$LOG" 2>&1
+                then
+                  echo "Build (release) succeeded."
+                else
+                  echo "::error::Build (release) failed."
+                  cat "$LOG" | xcbeautify --quiet --disable-logging --renderer github-actions || cat "$LOG"
+                  echo "Build (release) failed."
+                  exit 1
+                fi
             - name: Test (release)
               run: |
-                set -o pipefail
-                swift test --configuration release | xcbeautify --quiet --disable-logging --renderer github-actions
+                LOG="logs/swift-test-release.log"
+                if swift test --configuration release >"$LOG" 2>&1
+                then
+                  echo "Test (release) succeeded."
+                else
+                  echo "::error::Test (release) failed."
+                  cat "$LOG" | xcbeautify --quiet --disable-logging --renderer github-actions || cat "$LOG"
+                  echo "Test (release) failed."
+                  exit 1
+                fi
+            - name: Upload Logs
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                name: macOS-swift57-logs
+                path: logs
 
     """
 

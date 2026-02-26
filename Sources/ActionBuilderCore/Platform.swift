@@ -124,6 +124,9 @@ public final class Platform: Identifiable, Sendable {
               configurations: configurations, package: package, test: shouldTest, compiler: compiler
             ))
         }
+      }
+
+      if repo.uploadLogs {
         uploadYAML(&job, compiler: compiler)
       }
 
@@ -183,8 +186,8 @@ public final class Platform: Identifiable, Sendable {
                 run: swift --version
       """
 
-    let beautify = id == .macOS ? " | xcbeautify --quiet --disable-logging --renderer github-actions" : compiler.quietFlag
     let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
+    let shouldBeautify = id == .macOS
     if test {
       for config in configurations {
         yaml.append(
@@ -192,24 +195,48 @@ public final class Platform: Identifiable, Sendable {
             ? """
 
                     - name: Build (\(config))
-                      run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
+                      run: |
+                        \(loggedCommandYAML(
+                          command: "\(pathFix)swift build --configuration \(config)\(compiler.quietFlag)",
+                          logName: "swift-build-\(config).log",
+                          successMessage: "Build (\(config)) succeeded.",
+                          failureMessage: "Build (\(config)) failed.",
+                          beautify: shouldBeautify))
                     - name: Test (\(config) XCTest)
                       run: |
-                        set -o pipefail
-                        \(pathFix)swift test --disable-swift-testing --configuration \(config)\(beautify)
+                        \(loggedCommandYAML(
+                          command: "\(pathFix)swift test --disable-swift-testing --configuration \(config)",
+                          logName: "swift-test-xctest-\(config).log",
+                          successMessage: "Test (\(config) XCTest) succeeded.",
+                          failureMessage: "Test (\(config) XCTest) failed.",
+                          beautify: shouldBeautify))
                     - name: Test (\(config) Swift Testing)
                       run: |
-                        set -o pipefail
-                        \(pathFix)swift test --disable-xctest --configuration \(config)\(beautify)
+                        \(loggedCommandYAML(
+                          command: "\(pathFix)swift test --disable-xctest --configuration \(config)",
+                          logName: "swift-test-swift-testing-\(config).log",
+                          successMessage: "Test (\(config) Swift Testing) succeeded.",
+                          failureMessage: "Test (\(config) Swift Testing) failed.",
+                          beautify: shouldBeautify))
             """
             : """
 
                     - name: Build (\(config))
-                      run: \(pathFix)swift build --configuration \(config)\(compiler.quietFlag)
+                      run: |
+                        \(loggedCommandYAML(
+                          command: "\(pathFix)swift build --configuration \(config)\(compiler.quietFlag)",
+                          logName: "swift-build-\(config).log",
+                          successMessage: "Build (\(config)) succeeded.",
+                          failureMessage: "Build (\(config)) failed.",
+                          beautify: shouldBeautify))
                     - name: Test (\(config))
                       run: |
-                        set -o pipefail
-                        \(pathFix)swift test --configuration \(config)\(beautify)
+                        \(loggedCommandYAML(
+                          command: "\(pathFix)swift test --configuration \(config)",
+                          logName: "swift-test-\(config).log",
+                          successMessage: "Test (\(config)) succeeded.",
+                          failureMessage: "Test (\(config)) failed.",
+                          beautify: shouldBeautify))
             """
         )
       }
@@ -219,13 +246,43 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(config))
-                    run: \(pathFix)swift build -c \(config)\(compiler.quietFlag)
+                    run: |
+                      \(loggedCommandYAML(
+                        command: "\(pathFix)swift build -c \(config)\(compiler.quietFlag)",
+                        logName: "swift-build-\(config).log",
+                        successMessage: "Build (\(config)) succeeded.",
+                        failureMessage: "Build (\(config)) failed.",
+                        beautify: shouldBeautify))
           """
         )
       }
     }
 
     return yaml
+  }
+
+  fileprivate func loggedCommandYAML(
+    command: String, logName: String, successMessage: String, failureMessage: String, beautify: Bool
+  ) -> String {
+    let showLog =
+      beautify
+      ? "cat \"$LOG\" | xcbeautify --quiet --disable-logging --renderer github-actions || cat \"$LOG\""
+      : "cat \"$LOG\""
+
+    let script = """
+      LOG="logs/\(logName)"
+      if \(command) >"$LOG" 2>&1
+      then
+        echo "\(successMessage)"
+      else
+        echo "::error::\(failureMessage)"
+        \(showLog)
+        echo "\(failureMessage)"
+        exit 1
+      fi
+      """
+    let indent = "            "
+    return script.replacingOccurrences(of: "\n", with: "\n\(indent)")
   }
 
   fileprivate func runXcodebuildYAML(
