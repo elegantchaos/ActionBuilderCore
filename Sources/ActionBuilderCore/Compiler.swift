@@ -88,10 +88,10 @@ public final class Compiler: Identifiable, Sendable {
     static let earliestRelease = Self.swift57
 
     /// Actual ID of the latest fullrelease we know about.
-    static let latestRelease = Self.swift61
+    static let latestRelease = Self.swift62
 
     /// Actual ID of the latest snapshot release we know about.
-    static let latestSnapshotRelease = Self.swift62
+    static let latestSnapshotRelease = Self.swiftNightly
   }
 
   /// All supported compilers, in order from oldest to newest.
@@ -101,15 +101,15 @@ public final class Compiler: Identifiable, Sendable {
 
     Compiler(
       .swift57, name: "Swift 5.7", short: "5.7", linux: "swiftlang/swift:nightly-5.7-bionic",
-      mac: .xcode(version: "14.2", image: "macos-13")),
+      mac: .xcode(version: "14.2", image: "macos-14")),
 
     Compiler(
       .swift58, name: "Swift 5.8", short: "5.8", linux: "swiftlang/swift:nightly-5.8-bionic",
-      mac: .xcode(version: "14.3.1", image: "macos-13")),
+      mac: .xcode(version: "14.3.1", image: "macos-14")),
 
     Compiler(
       .swift59, name: "Swift 5.9", short: "5.9", linux: "swiftlang/swift:nightly-5.9-bionic",
-      mac: .xcode(version: "15.2", image: "macos-13")),
+      mac: .xcode(version: "15.2", image: "macos-14")),
 
 
     Compiler(
@@ -118,7 +118,7 @@ public final class Compiler: Identifiable, Sendable {
 
     Compiler(
       .swift60, name: "Swift 6.0", short: "6.0", linux: "ubuntu-22.04",
-      mac: .xcode(version: "16.2.0", image: "macos-14")),
+      mac: .xcode(version: "16.2.0", image: "macos-15")),
 
     Compiler(
       .swift61, name: "Swift 6.1", short: "6.1", linux: "ubuntu-22.04",
@@ -126,12 +126,12 @@ public final class Compiler: Identifiable, Sendable {
 
     Compiler(
       .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-22.04",
-      mac: .xcode(version: "26.0.0", image: "macos-15"), isSnapshot: true),
+      mac: .xcode(version: "26.2.0", image: "macos-15")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(
       .swiftNightly, name: "Swift Development Nightly", short: "dev",
       linux: "swiftlang/swift:nightly",
-      mac: .toolchain(version: "26.0.0", branch: "development", image: "macos-12")),
+      mac: .toolchain(version: "26.2.0", branch: "development", image: "macos-15")),
   ]
 }

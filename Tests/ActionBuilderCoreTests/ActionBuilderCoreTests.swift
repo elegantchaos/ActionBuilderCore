@@ -59,7 +59,7 @@ func testYAMLmacOSSwift57() async throws {
     jobs:
         macOS-swift57:
             name: macOS (Swift 5.7)
-            runs-on: macos-13
+            runs-on: macos-14
             steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -102,7 +102,7 @@ func testYAMLiOSSwift57() throws {
     jobs:
         xcode-swift57:
             name: iOS (Swift 5.7, Xcode matching Swift 5.7)
-            runs-on: macos-13
+            runs-on: macos-14
             steps:
             - name: Checkout
               uses: actions/checkout@v4
