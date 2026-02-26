@@ -58,15 +58,6 @@ public final class Compiler: Identifiable, Sendable {
     }
   }
 
-  /// Version label used by snapshot-capable setup actions.
-  public var swiftlyName: String {
-    if isSnapshot {
-      return "\(short)-snapshot"
-    } else {
-      return short
-    }
-  }
-
   /// Returns whether this compiler can run tests on the given platform.
   func supportsTesting(on platform: Platform.ID) -> Bool {
     // no Xcode version supports watchOS testing
@@ -110,9 +101,6 @@ public final class Compiler: Identifiable, Sendable {
 
     /// Actual ID of the latest fullrelease we know about.
     static let latestRelease = Self.swift62
-
-    /// Actual ID of the latest snapshot release we know about.
-    static let latestSnapshotRelease = Self.swiftNightly
 
     /// Converts a compiler ID to a numeric `(major, minor)` pair.
     /// Symbolic IDs return `nil`.
