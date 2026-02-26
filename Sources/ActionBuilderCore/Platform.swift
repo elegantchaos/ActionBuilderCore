@@ -140,14 +140,25 @@ public final class Platform: Identifiable, Sendable {
   fileprivate func selectSwiftYAML(
     _ yaml: inout String, compiler: Compiler
   ) {
-    if compiler.isSnapshot || compiler.id == .swiftNightly {
+    if compiler.id == .swiftNightly {
       yaml.append(
         """
 
                 - name: Select Swift
-                  uses: beeauvin/swiftly-swift@v1
+                  uses: SwiftyLab/setup-swift@v1
                   with:
-                    swift-version: "\(compiler.swiftlyName)"
+                    development: true
+        """
+      )
+    } else if compiler.isSnapshot {
+      yaml.append(
+        """
+
+                - name: Select Swift
+                  uses: SwiftyLab/setup-swift@v1
+                  with:
+                    development: true
+                    swift-version: "\(compiler.short)"
         """
       )
     } else {
