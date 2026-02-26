@@ -68,6 +68,7 @@ let package = Package(
 
       resources: [
         .copy("Resources/Example-config.package"),
+        .copy("Resources/Example-future.package"),
         .copy("Resources/Example-mac.package"),
         .copy("Resources/Example-multi.package"),
         .copy("Resources/Example-old.package"),

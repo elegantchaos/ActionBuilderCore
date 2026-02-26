@@ -48,6 +48,25 @@ func testParsingPackageConfigFile() async throws {
 }
 
 @Test
+func testParsingPackageFutureToolsVersion() async throws {
+  // Future tools versions should collapse to latest known release via swiftLatest.
+  let examplePackage = Bundle.module.url(forResource: "Example-future", withExtension: "package")!
+  let repo = try await Repo(forPackage: examplePackage)
+  #expect(repo.compilers == [.swiftLatest])
+  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.latestRelease]))
+}
+
+@Test
+func testLegacyCompilerIDsMapToEarliestSupportedRelease() {
+  // Legacy compiler IDs are accepted for compatibility but mapped to earliest supported.
+  let repo = Repo(
+    name: "testRepo", owner: "testOwner", platforms: [.macOS],
+    compilers: [.swift57, .swift58, .swift59, .swiftLatest], firstlast: false)
+
+  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.earliestRelease, .latestRelease]))
+}
+
+@Test
 func testYAMLmacOSSwift57() async throws {
   let expected = """
     # --------------------------------------------------------------------------------
