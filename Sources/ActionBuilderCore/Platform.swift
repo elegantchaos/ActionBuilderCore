@@ -528,7 +528,18 @@ public final class Platform: Identifiable, Sendable {
         """
 
                 - name: Install xcbeautify
-                  run: brew install xcbeautify
+                  run: |
+                    if command -v xcbeautify >/dev/null 2>&1
+                    then
+                      echo "xcbeautify already installed."
+                    elif brew install xcbeautify > logs/install-xcbeautify.log 2>&1
+                    then
+                      echo "xcbeautify installed."
+                    else
+                      echo "::error::Failed to install xcbeautify."
+                      cat logs/install-xcbeautify.log
+                      exit 1
+                    fi
         """
       )
     }

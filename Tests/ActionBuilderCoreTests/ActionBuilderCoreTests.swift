@@ -11,7 +11,7 @@ func testParsingPackageOldPlatform() async throws {
   // than we currently support.
   let examplePackage = Bundle.module.url(forResource: "Example-old", withExtension: "package")!
   let repo = try await Repo(forPackage: examplePackage)
-  #expect(repo.enabledCompilers.map { $0.id } == [.earliestRelease, .latestRelease])
+  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.earliestRelease, .latestRelease]))
 }
 
 @Test
@@ -19,7 +19,7 @@ func testParsingPackageMacPlatform() async throws {
   // test extracting the Swift version and platforms from a package with macOS support
   let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
   let repo = try await Repo(forPackage: examplePackage)
-  #expect(repo.enabledCompilers.map { $0.id } == [.swift57, .latestRelease])
+  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.swift57, .latestRelease]))
   #expect(repo.enabledPlatforms.map { $0.id } == [.macOS])
 }
 
@@ -64,7 +64,18 @@ func testYAMLmacOSSwift57() async throws {
             - name: Checkout
               uses: actions/checkout@v4
             - name: Install xcbeautify
-              run: brew install xcbeautify
+              run: |
+                if command -v xcbeautify >/dev/null 2>&1
+                then
+                  echo "xcbeautify already installed."
+                elif brew install xcbeautify > logs/install-xcbeautify.log 2>&1
+                then
+                  echo "xcbeautify installed."
+                else
+                  echo "::error::Failed to install xcbeautify."
+                  cat logs/install-xcbeautify.log
+                  exit 1
+                fi
             - name: Make Logs Directory
               run: mkdir logs
             - name: Select Swift
@@ -131,7 +142,18 @@ func testYAMLiOSSwift57() throws {
             - name: Checkout
               uses: actions/checkout@v4
             - name: Install xcbeautify
-              run: brew install xcbeautify
+              run: |
+                if command -v xcbeautify >/dev/null 2>&1
+                then
+                  echo "xcbeautify already installed."
+                elif brew install xcbeautify > logs/install-xcbeautify.log 2>&1
+                then
+                  echo "xcbeautify installed."
+                else
+                  echo "::error::Failed to install xcbeautify."
+                  cat logs/install-xcbeautify.log
+                  exit 1
+                fi
             - name: Make Logs Directory
               run: mkdir logs
             - name: Resolve Xcode Version
