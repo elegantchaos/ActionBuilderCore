@@ -41,9 +41,9 @@ struct PackageInfo: Codable {
 
     let spm = Runner(command: "swift", cwd: url)
     let arguments = if let scratchPath {
-      ["package", "--scratch-path", scratchPath.path, "dump-package"]
+      ["package", "--disable-sandbox", "--scratch-path", scratchPath.path, "dump-package"]
     } else {
-      ["package", "dump-package"]
+      ["package", "--disable-sandbox", "dump-package"]
     }
     let output = spm.run(arguments)
     try await output.throwIfFailed(
