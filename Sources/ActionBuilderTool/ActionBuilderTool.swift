@@ -5,7 +5,6 @@
 
 import ActionBuilderCore
 import Foundation
-import SemanticVersion
 
 #if canImport(AppKit)
   import AppKit

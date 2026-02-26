@@ -30,7 +30,6 @@ let package = Package(
   ],
 
   dependencies: [
-    .package(url: "https://github.com/elegantchaos/ChaosByteStreams.git", from: "1.0.7"),
     .package(url: "https://github.com/elegantchaos/Runner.git", from: "2.1.5"),
     .package(url: "https://github.com/elegantchaos/SemanticVersion.git", from: "1.1.2"),
     .package(url: "https://github.com/elegantchaos/Versionator.git", exact: "2.1.1"),
@@ -52,7 +51,6 @@ let package = Package(
       name: "ActionBuilderTool",
       dependencies: [
         "ActionBuilderCore",
-        "ChaosByteStreams",
       ],
       plugins: [
         .plugin(name: "VersionatorPlugin", package: "Versionator")
