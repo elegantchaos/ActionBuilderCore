@@ -5,11 +5,16 @@
 
 import Foundation
 
+/// Generates GitHub workflow YAML and optional README headers for a repository.
 public class Generator {
+  /// Name of the generating tool.
   let name: String
+  /// Version string embedded in generated output.
   let version: String
+  /// Documentation URL embedded in generated output.
   let link: String
 
+  /// Creates a generator with metadata included in generated files.
   public init(name: String, version: String, link: String) {
     self.name = name
     self.version = version

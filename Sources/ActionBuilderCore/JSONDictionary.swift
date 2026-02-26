@@ -5,4 +5,5 @@
 
 import Foundation
 
+/// Convenience alias for loosely-typed JSON object dictionaries.
 public typealias JSONDictionary = [String:Any]

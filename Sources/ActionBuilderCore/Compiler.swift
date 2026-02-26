@@ -5,19 +5,30 @@
 
 import Foundation
 
+/// Describes a Swift toolchain target and how to run it on GitHub Actions.
 public final class Compiler: Identifiable, Sendable {
+  /// Strategy for selecting Swift on macOS runners.
   public enum XcodeMode: Sendable {
+    /// Uses the Swift toolchain bundled with a specific Xcode version.
     case xcode(version: String, image: String = "macos-latest")
+    /// Uses a snapshot toolchain installed alongside a selected Xcode version.
     case toolchain(version: String, branch: String, image: String = "macos-latest")
   }
 
+  /// Stable identifier used in config files and workflow job IDs.
   public let id: ID
+  /// Human-readable compiler name for job titles.
   let name: String
+  /// Short Swift version string (for example `6.2`).
   let short: String
+  /// Linux runner or container selector.
   let linux: String
+  /// macOS selection strategy for this compiler.
   let mac: XcodeMode
+  /// Indicates that the version refers to a pre-release snapshot.
   let isSnapshot: Bool
 
+  /// Creates a compiler definition used by workflow generation.
   public init(_ id: ID, name: String, short: String, linux: String, mac: XcodeMode, isSnapshot: Bool = false) {
     self.id = id
     self.name = name
@@ -47,6 +58,7 @@ public final class Compiler: Identifiable, Sendable {
     }
   }
 
+  /// Version label used by snapshot-capable setup actions.
   public var swiftlyName: String {
     if isSnapshot {
       return "\(short)-snapshot"
@@ -55,6 +67,7 @@ public final class Compiler: Identifiable, Sendable {
     }
   }
 
+  /// Returns whether this compiler can run tests on the given platform.
   func supportsTesting(on platform: Platform.ID) -> Bool {
     // no Xcode version supports watchOS testing
     if platform == .watchOS {
@@ -69,13 +82,21 @@ public final class Compiler: Identifiable, Sendable {
     return true
   }
 
+  /// Known compiler IDs supported by this package.
   public enum ID: String, Equatable, CaseIterable, Codable, Sendable {
+    /// Swift 5.7 (legacy config compatibility only).
     case swift57
+    /// Swift 5.8 (legacy config compatibility only).
     case swift58
+    /// Swift 5.9 (legacy config compatibility only).
     case swift59
+    /// Swift 5.10.
     case swift510
+    /// Swift 6.0.
     case swift60
+    /// Swift 6.1.
     case swift61
+    /// Swift 6.2.
     case swift62
 
     /// symbolic ID which indicates the latest Swift version.
@@ -93,6 +114,8 @@ public final class Compiler: Identifiable, Sendable {
     /// Actual ID of the latest snapshot release we know about.
     static let latestSnapshotRelease = Self.swiftNightly
 
+    /// Converts a compiler ID to a numeric `(major, minor)` pair.
+    /// Symbolic IDs return `nil`.
     var versionTuple: (Int, Int)? {
       switch self {
         case .swift57: return (5, 7)

@@ -5,26 +5,46 @@
 
 import Foundation
 
+/// Repository-level workflow generation configuration.
 public struct Repo: Equatable, Sendable {
+  /// Default owner used when git metadata is unavailable.
   public static let defaultOwner = "Unknown"
+  /// Default workflow file and display name.
   public static let defaultWorkflow = "Tests"
+  /// Default test mode behavior.
   public static let defaultTest = TestMode.auto
+  /// Default strategy to run only first and last requested compilers.
   public static let defaultFirstLast = true
+  /// Default Slack notification setting.
   public static let defaultPostSlackNotification = false
+  /// Default log artifact upload setting.
   public static let defaultUploadLogs = true
+  /// Default README header generation setting.
   public static let defaultHeader = true
+  /// Default build configurations to run.
   public static let defaultConfigurations: [Configuration] = [.release]
 
+  /// Repository name.
   public let name: String
+  /// Repository owner or organization.
   public let owner: String
+  /// Workflow display name.
   public let workflow: String
+  /// Requested platforms to test.
   public var platforms: Set<Platform.ID>
+  /// Requested compiler IDs to test.
   public var compilers: Set<Compiler.ID>
+  /// Requested build configurations.
   public var configurations: Set<Configuration>
+  /// Test mode for generated jobs.
   public var testMode: TestMode
+  /// Whether to run only earliest and latest selected compiler.
   public let firstlast: Bool
+  /// Whether to include Slack notification steps.
   public let postSlackNotification: Bool
+  /// Whether to upload `logs/` artifacts.
   public let uploadLogs: Bool
+  /// Whether to generate README header content.
   public let header: Bool
 
   /// Initialise explicitly.
@@ -64,12 +84,14 @@ public struct Repo: Equatable, Sendable {
       settings?.postSlackNotification ?? Self.defaultPostSlackNotification
   }
 
+  /// Platforms requested in settings, resolved to concrete `Platform` values.
   var enabledPlatforms: [Platform] {
     return Platform.platforms
       .filter { platforms.contains($0.id) }
       .sorted { $0.name < $1.name }
   }
 
+  /// Compilers requested in settings, including symbolic and legacy compatibility handling.
   var enabledCompilers: [Compiler] {
     var enabledIDs = self.compilers
     let legacyIDs: Set<Compiler.ID> = [.swift57, .swift58, .swift59]
@@ -90,12 +112,14 @@ public struct Repo: Equatable, Sendable {
     return sorted
   }
 
+  /// Configurations requested in settings, in stable sorted order.
   var enabledConfigs: [Configuration] {
     return Configuration.allCases
       .filter { configurations.contains($0) }
       .sorted { $0.rawValue < $1.rawValue }
   }
 
+  /// Final compiler list to run, honoring the `firstlast` setting.
   var compilersToTest: [Compiler] {
     let supportedCompilers = enabledCompilers
     if firstlast && (supportedCompilers.count > 0) {
@@ -111,11 +135,16 @@ public struct Repo: Equatable, Sendable {
     }
   }
 
+  /// Controls whether jobs only build or also run tests.
   public enum TestMode: Sendable {
+    /// Build only.
     case build
+    /// Build and test.
     case test
+    /// Infer from whether package test targets exist.
     case auto
 
+    /// Initializes test mode from legacy optional boolean settings.
     init(_ shouldTest: Bool?) {
       switch shouldTest {
       case false: self = .build
@@ -124,6 +153,7 @@ public struct Repo: Equatable, Sendable {
       }
     }
 
+    /// Converts test mode to the persisted optional boolean representation.
     var asBool: Bool? {
       switch self {
       case .test: return true

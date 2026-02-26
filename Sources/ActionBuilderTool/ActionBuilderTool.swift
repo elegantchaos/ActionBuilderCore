@@ -11,7 +11,9 @@ import SemanticVersion
   import AppKit
 #endif
 
+/// Command-line entry point that reads package metadata and writes workflow artifacts.
 @main struct ActionBuilderTool {
+  /// Parses command-line options, builds repository settings, then updates workflow/header files.
   static func main() async throws {
     let all = ProcessInfo.processInfo.arguments
     let args = all.filter({ !$0.starts(with: "--") })
@@ -52,6 +54,7 @@ import SemanticVersion
     }
   }
 
+  /// Writes the generated workflow YAML into `.github/workflows/<workflow>.yml`.
   static func updateWorkflow(for repo: Repo, at url: URL, with generator: Generator) throws {
     let source = generator.workflow(for: repo)
     let workflowsURL = url.appendingPathComponent(".github/workflows")
@@ -62,6 +65,7 @@ import SemanticVersion
     try source.data(using: .utf8)?.write(to: sourceURL)
   }
 
+  /// Inserts or replaces the generated README header block.
   static func updateHeader(for repo: Repo, at url: URL, with generator: Generator) throws {
     let (header, delimiter) = generator.header(for: repo)
 
@@ -75,6 +79,7 @@ import SemanticVersion
     try data?.write(to: readmeURL)
   }
 
+  /// Creates a default `.actionbuilder.json` file when one does not exist.
   static func makeSettings(for repo: Repo, at url: URL) {
     let settingsURL = Repo.settingsURL(forPackage: url)
     if !FileManager.default.fileExists(atPath: settingsURL.path) {
@@ -89,6 +94,7 @@ import SemanticVersion
     }
   }
 
+  /// Reveals the settings file in Finder when AppKit is available.
   static func revealSettings(for repo: Repo, at url: URL) {
     let settingsURL = Repo.settingsURL(forPackage: url)
     #if canImport(AppKit)
@@ -96,6 +102,7 @@ import SemanticVersion
     #endif
   }
 
+  /// Opens the settings file in the default editor when AppKit is available.
   static func editSettings(for repo: Repo, at url: URL) {
     let settingsURL = Repo.settingsURL(forPackage: url)
     #if canImport(AppKit)

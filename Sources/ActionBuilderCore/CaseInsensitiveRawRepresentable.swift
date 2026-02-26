@@ -5,11 +5,14 @@
 
 import Foundation
 
+/// A `RawRepresentable` helper that supports case-insensitive lookup for string raw values.
 protocol CaseInsensitiveRawRepresentable: RawRepresentable, CaseIterable where RawValue == String {
+    /// Returns a case-insensitive match from `allCases`, or `nil` when no case matches.
     init?(rawInsensitive: String)
 }
 
 extension CaseInsensitiveRawRepresentable {
+    /// Initializes by matching `rawInsensitive` against each case's `rawValue`.
     init?(rawInsensitive: String) {
         for c in Self.allCases {
             if c.rawValue.localizedCaseInsensitiveCompare(rawInsensitive) == .orderedSame {

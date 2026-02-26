@@ -6,25 +6,25 @@
 import Foundation
 import SemanticVersion
 
+/// Repository construction helpers backed by Swift Package manifest metadata.
 extension Repo {
 
   /// Initialise from an SPM package directory
   public init(forPackage url: URL) async throws {
 
-    // try to extract git info
+    // Try to extract git metadata first so defaults match the remote repository.
     let gitInfo = try? await GitInfo(from: url)
     let defaultName = (gitInfo?.url ?? url).deletingPathExtension().lastPathComponent
     let defaultOwner = gitInfo?.owner ?? Self.defaultOwner
 
-    // use the settings file at the root of the directory to
-    // configure the repo (if it exists)
+    // Use explicit local settings when present.
     let settings = try? Settings(from: Self.settingsURL(forPackage: url))
     var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: defaultOwner)
 
-    // try to parse SPM package info
+    // Parse package metadata from `swift package dump-package`.
     let package = try await PackageInfo(from: url)
 
-    // extract platforms from the package if they weren't explicitly specified
+    // Derive platforms only when no explicit platform settings were provided.
     if repo.enabledPlatforms.isEmpty {
       for name in package.platforms.map(\.platformName) {
         if let id = Platform.ID(rawInsensitive: name) {
@@ -34,13 +34,13 @@ extension Repo {
         }
       }
 
-      // default to macOS if nothing was specified
+      // Default to macOS if no supported platforms were found in the manifest.
       if repo.platforms.isEmpty {
         repo.platforms.insert(Platform.ID.macOS)
       }
     }
 
-    // extract compiler versions from the package if they weren't explicitly specified
+    // Derive compilers only when no explicit compiler settings were provided.
     if repo.enabledCompilers.isEmpty {
       let version = SemanticVersion(package.toolsVersion._version)
       let parsedVersion = (version.major, version.minor)
@@ -55,16 +55,16 @@ extension Repo {
         } else {
           repo.compilers = [compiler]
         }
-      } else if parsedVersion > latestVersion {  // If the Swift version is newer than the latest we know about, just use the latest we know about.
+      } else if parsedVersion > latestVersion {  // If the Swift version is newer than we know about, pin to latest known release.
         repo.compilers = [.swiftLatest]
-      } else if parsedVersion < earliestVersion {  // If the Swift version is too early, use the earliest we support.
+      } else if parsedVersion < earliestVersion {  // If the Swift version is too early, raise to the earliest supported release.
         repo.compilers = [.earliestRelease, .swiftLatest]
       } else {
         repo.compilers = [.swiftLatest]
       }
     }
 
-    // if the testMode is auto, use the presence of test targets to set it
+    // Resolve auto test mode from whether test targets exist.
     if repo.testMode == .auto {
       repo.testMode = package.hasTestTargets ? .test : .build
     }

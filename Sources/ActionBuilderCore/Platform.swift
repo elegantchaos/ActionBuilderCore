@@ -3,12 +3,18 @@
 //  All code (c) 2020 - present day, Elegant Chaos Limited.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+/// Describes a supported platform and emits workflow YAML for that platform's jobs.
 public final class Platform: Identifiable, Sendable {
+  /// Stable platform identifier used in config and job IDs.
   public let id: ID
+  /// Human-readable platform name used in job titles.
   public let name: String
+  /// Sub-platforms grouped into a shared Xcode job.
   public let subPlatforms: [Platform]
+  /// Indicates that the platform requires simulator destination selection.
   public let needsDestination: Bool
 
+  /// Canonical platform IDs recognized by ActionBuilder.
   public enum ID: String, Codable, CaseInsensitiveRawRepresentable, Sendable {
     case macOS
     case iOS
@@ -20,6 +26,7 @@ public final class Platform: Identifiable, Sendable {
     case xcode
   }
 
+  /// Default platform list used for automatic platform discovery.
   public static let platforms = [
     Platform(.macOS, name: "macOS"),
     Platform(.iOS, name: "iOS", needsDestination: true),
@@ -29,6 +36,7 @@ public final class Platform: Identifiable, Sendable {
     Platform(.linux, name: "Linux"),
   ]
 
+  /// Creates a platform definition.
   public init(
     _ id: ID, name: String, needsDestination: Bool = false, subPlatforms: [Platform] = []
   ) {
@@ -72,6 +80,7 @@ public final class Platform: Identifiable, Sendable {
 
   }
 
+  /// Returns the display name used for a workflow job.
   public func jobName(with compiler: Compiler) -> String {
     if !subPlatforms.isEmpty {
       switch compiler.mac {
@@ -84,6 +93,7 @@ public final class Platform: Identifiable, Sendable {
     return "\(name) (\(compiler.name))"
   }
 
+  /// Generates one or more workflow jobs for this platform and compiler set.
   public func yaml(repo: Repo, compilers: [Compiler], configurations: [Configuration]) -> String {
     let package = repo.name
     let shouldTest = repo.testMode != .build
@@ -140,6 +150,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
+  /// Emits Swift toolchain setup YAML for non-Xcode jobs.
   fileprivate func selectSwiftYAML(
     _ yaml: inout String, compiler: Compiler
   ) {
@@ -177,6 +188,7 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
+  /// Emits `swift build`/`swift test` steps for non-Xcode jobs.
   fileprivate func runSwiftYAML(
     configurations: [Configuration], test: Bool, customToolchain: Bool, compiler: Compiler
   ) -> String {
@@ -261,6 +273,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
+  /// Returns a script that captures command output to a log and prints concise success/failure output.
   fileprivate func loggedCommandYAML(
     command: String, logName: String, successMessage: String, failureMessage: String, beautify: Bool
   ) -> String {
@@ -285,6 +298,7 @@ public final class Platform: Identifiable, Sendable {
     return script.replacingOccurrences(of: "\n", with: "\n\(indent)")
   }
 
+  /// Emits `xcodebuild` steps for simulator and Apple-platform jobs.
   fileprivate func runXcodebuildYAML(
     configurations: [Configuration], package: String, test: Bool, compiler: Compiler
   ) -> String {
@@ -354,6 +368,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
+  /// Emits an artifact-upload step for the per-job `logs/` directory.
   fileprivate func uploadYAML(_ yaml: inout String, compiler: Compiler) {
     yaml.append(
       """
@@ -368,6 +383,7 @@ public final class Platform: Identifiable, Sendable {
     )
   }
 
+  /// Emits an optional Slack notification step.
   fileprivate func notifyYAML(compiler: Compiler) -> String {
     var yaml = ""
     yaml.append(
@@ -386,6 +402,7 @@ public final class Platform: Identifiable, Sendable {
     return yaml
   }
 
+  /// Emits steps that select Xcode and install a nightly snapshot toolchain.
   fileprivate func selectToolchainYAML(_ yaml: inout String, _ branch: String, _ version: String) {
     let download =
       """
@@ -421,6 +438,7 @@ public final class Platform: Identifiable, Sendable {
     )
   }
 
+  /// Emits steps that resolve and select the Xcode version matching the requested Swift version.
   fileprivate func selectXcodeYAML(_ yaml: inout String, compiler: Compiler) {
     yaml.append(
       """
@@ -470,6 +488,7 @@ public final class Platform: Identifiable, Sendable {
     )
   }
 
+  /// Emits runner selection and toolchain environment for the current platform/compiler.
   fileprivate func containerYAML(
     _ yaml: inout String, _ compiler: Compiler, _ xcodeToolchain: inout String?,
     _ xcodeVersion: inout String?
@@ -513,6 +532,7 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
+  /// Emits common workflow steps shared by all jobs.
   fileprivate func commonYAML(_ yaml: inout String) {
     yaml.append(
       """
@@ -545,6 +565,7 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
+  /// Emits the step that creates the job-local `logs/` directory.
   fileprivate func makeLogsYAML(_ yaml: inout String) {
     yaml.append(
       """

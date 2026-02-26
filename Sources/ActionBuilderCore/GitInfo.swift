@@ -8,9 +8,12 @@ import Runner
 
 /// Some minimal package information extracted from git.
 struct GitInfo: Codable {
+  /// Parsed remote repository URL.
   let url: URL
+  /// Repository owner component extracted from `url`.
   let owner: String
 
+  /// Reads git remote metadata from a package directory.
   init(from url: URL) async throws {
     let spm = Runner(command: "git", cwd: url)
     let output = spm.run(["remote", "-v"])
@@ -39,6 +42,7 @@ struct GitInfo: Codable {
     self.owner = url.deletingLastPathComponent().lastPathComponent
   }
 
+  /// Errors produced while discovering remote metadata from git output.
   enum Error: Swift.Error {
     case launchingGitFailed(URL, String)
     case failedGettingRemote([String.SubSequence])
