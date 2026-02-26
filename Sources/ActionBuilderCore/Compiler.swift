@@ -30,7 +30,7 @@ public final class Compiler: Identifiable, Sendable {
   /// Does the compiler support the --disable-swift-testing and --disable-xctest flags?
   public var supportsSeparateTestMethods: Bool {
     switch id {
-      case .swift57, .swift58, .swift59, .swift510:
+      case .swift510:
         return false
       default:
         return true
@@ -85,13 +85,26 @@ public final class Compiler: Identifiable, Sendable {
     case swiftNightly
 
     /// Actual ID of the earliest release we support.
-    static let earliestRelease = Self.swift57
+    static let earliestRelease = Self.swift510
 
     /// Actual ID of the latest fullrelease we know about.
     static let latestRelease = Self.swift62
 
     /// Actual ID of the latest snapshot release we know about.
     static let latestSnapshotRelease = Self.swiftNightly
+
+    var versionTuple: (Int, Int)? {
+      switch self {
+        case .swift57: return (5, 7)
+        case .swift58: return (5, 8)
+        case .swift59: return (5, 9)
+        case .swift510: return (5, 10)
+        case .swift60: return (6, 0)
+        case .swift61: return (6, 1)
+        case .swift62: return (6, 2)
+        case .swiftLatest, .swiftNightly: return nil
+      }
+    }
   }
 
   /// All supported compilers, in order from oldest to newest.
@@ -100,32 +113,19 @@ public final class Compiler: Identifiable, Sendable {
     // See https://xcodereleases.com/ for Xcode/Swift version mapping.
 
     Compiler(
-      .swift57, name: "Swift 5.7", short: "5.7", linux: "swiftlang/swift:nightly-5.7-bionic",
-      mac: .xcode(version: "14.2", image: "macos-14")),
-
-    Compiler(
-      .swift58, name: "Swift 5.8", short: "5.8", linux: "swiftlang/swift:nightly-5.8-bionic",
-      mac: .xcode(version: "14.3.1", image: "macos-14")),
-
-    Compiler(
-      .swift59, name: "Swift 5.9", short: "5.9", linux: "swiftlang/swift:nightly-5.9-bionic",
-      mac: .xcode(version: "15.2", image: "macos-14")),
-
-
-    Compiler(
-      .swift510, name: "Swift 5.10", short: "5.10", linux: "swiftlang/swift:nightly-5.10-bionic",
+      .swift510, name: "Swift 5.10", short: "5.10", linux: "ubuntu-24.04",
       mac: .xcode(version: "15.4", image: "macos-14")),
 
     Compiler(
-      .swift60, name: "Swift 6.0", short: "6.0", linux: "ubuntu-22.04",
+      .swift60, name: "Swift 6.0", short: "6.0", linux: "ubuntu-24.04",
       mac: .xcode(version: "16.2.0", image: "macos-15")),
 
     Compiler(
-      .swift61, name: "Swift 6.1", short: "6.1", linux: "ubuntu-22.04",
+      .swift61, name: "Swift 6.1", short: "6.1", linux: "ubuntu-24.04",
       mac: .xcode(version: "16.4.0", image: "macos-15")),
 
     Compiler(
-      .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-22.04",
+      .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-24.04",
       mac: .xcode(version: "26.2.0", image: "macos-15")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg

@@ -19,7 +19,7 @@ func testParsingPackageMacPlatform() async throws {
   // test extracting the Swift version and platforms from a package with macOS support
   let examplePackage = Bundle.module.url(forResource: "Example-mac", withExtension: "package")!
   let repo = try await Repo(forPackage: examplePackage)
-  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.swift57, .latestRelease]))
+  #expect(Set(repo.enabledCompilers.map { $0.id }) == Set([.swift510, .latestRelease]))
   #expect(repo.enabledPlatforms.map { $0.id } == [.macOS])
 }
 
@@ -57,8 +57,8 @@ func testYAMLmacOSSwift57() async throws {
     name: Tests
     on: [push, pull_request]
     jobs:
-        macOS-swift57:
-            name: macOS (Swift 5.7)
+        macOS-swift510:
+            name: macOS (Swift 5.10)
             runs-on: macos-14
             steps:
             - name: Checkout
@@ -81,13 +81,13 @@ func testYAMLmacOSSwift57() async throws {
             - name: Select Swift
               uses: swift-actions/setup-swift@v2
               with:
-                swift-version: "5.7"
+                swift-version: "5.10"
             - name: Swift Version
               run: swift --version
             - name: Build (release)
               run: |
                 LOG="logs/swift-build-release.log"
-                if swift build --configuration release >"$LOG" 2>&1
+                if swift build --configuration release --quiet >"$LOG" 2>&1
                 then
                   echo "Build (release) succeeded."
                 else
@@ -112,14 +112,14 @@ func testYAMLmacOSSwift57() async throws {
               uses: actions/upload-artifact@v4
               if: always()
               with:
-                name: macOS-swift57-logs
+                name: macOS-swift510-logs
                 path: logs
 
     """
 
   let generator = Generator(
     name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.macOS], compilers: [.swift57])
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.macOS], compilers: [.swift510])
 
   let source = generator.workflow(for: repo)
   try source.assertMatches(expected)
@@ -135,8 +135,8 @@ func testYAMLiOSSwift57() throws {
     name: Tests
     on: [push, pull_request]
     jobs:
-        xcode-swift57:
-            name: iOS (Swift 5.7, Xcode matching Swift 5.7)
+        xcode-swift510:
+            name: iOS (Swift 5.10, Xcode matching Swift 5.10)
             runs-on: macos-14
             steps:
             - name: Checkout
@@ -159,7 +159,7 @@ func testYAMLiOSSwift57() throws {
             - name: Resolve Xcode Version
               id: resolve-xcode
               run: |
-                REQUESTED_SWIFT="5.7"
+                REQUESTED_SWIFT="5.10"
                 ls -d /Applications/Xcode* > logs/xcode-versions.log
                 FOUND_XCODE=""
                 while read -r APP
@@ -227,14 +227,14 @@ func testYAMLiOSSwift57() throws {
               uses: actions/upload-artifact@v4
               if: always()
               with:
-                name: xcode-swift57-logs
+                name: xcode-swift510-logs
                 path: logs
 
     """
 
   let generator = Generator(
     name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
-  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS], compilers: [.swift57])
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS], compilers: [.swift510])
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
   try source.assertMatches(expected)

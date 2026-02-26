@@ -72,6 +72,12 @@ public struct Repo: Equatable, Sendable {
 
   var enabledCompilers: [Compiler] {
     var enabledIDs = self.compilers
+    let legacyIDs: Set<Compiler.ID> = [.swift57, .swift58, .swift59]
+    if !enabledIDs.isDisjoint(with: legacyIDs) {
+      enabledIDs.subtract(legacyIDs)
+      enabledIDs.insert(.earliestRelease)
+    }
+
     if enabledIDs.contains(.swiftLatest) {
       enabledIDs.remove(.swiftLatest)
       enabledIDs.insert(.latestRelease)

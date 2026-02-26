@@ -43,13 +43,22 @@ extension Repo {
     // extract compiler versions from the package if they weren't explicitly specified
     if repo.enabledCompilers.isEmpty {
       let version = SemanticVersion(package.toolsVersion._version)
+      let parsedVersion = (version.major, version.minor)
+      let earliestVersion = Compiler.ID.earliestRelease.versionTuple ?? parsedVersion
+      let latestVersion = Compiler.ID.latestRelease.versionTuple ?? parsedVersion
       let swiftVersion = "swift\(version.major)\(version.minor)"
-      if !(version.isInvalid || version.isUnknown), let compiler = Compiler.ID(rawValue: swiftVersion) {
-        repo.compilers = compiler.rawValue < Compiler.ID.latestRelease.rawValue ? [compiler, .swiftLatest] : [compiler]
-      } else if swiftVersion > Compiler.ID.latestRelease.rawValue {  // If the Swift version is newer than the latest we know about, just use the latest we know about.
+      if !(version.isInvalid || version.isUnknown), let compiler = Compiler.ID(rawValue: swiftVersion), let compilerVersion = compiler.versionTuple {
+        if compilerVersion < earliestVersion {
+          repo.compilers = [.earliestRelease, .swiftLatest]
+        } else if compilerVersion < latestVersion {
+          repo.compilers = [compiler, .swiftLatest]
+        } else {
+          repo.compilers = [compiler]
+        }
+      } else if parsedVersion > latestVersion {  // If the Swift version is newer than the latest we know about, just use the latest we know about.
         repo.compilers = [.swiftLatest]
-      } else if swiftVersion < Compiler.ID.earliestRelease.rawValue {  // If the Swift version is too early, use the earliest we support.
-        repo.compilers = [.swift57, .swiftLatest]
+      } else if parsedVersion < earliestVersion {  // If the Swift version is too early, use the earliest we support.
+        repo.compilers = [.earliestRelease, .swiftLatest]
       } else {
         repo.compilers = [.swiftLatest]
       }
