@@ -10,7 +10,7 @@ import SemanticVersion
 extension Repo {
 
   /// Initialise from an SPM package directory
-  public init(forPackage url: URL) async throws {
+  public init(forPackage url: URL, calledFromPlugin: Bool = false) async throws {
 
     // Try to extract git metadata first so defaults match the remote repository.
     let gitInfo = try? await GitInfo(from: url)
@@ -22,7 +22,7 @@ extension Repo {
     var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: defaultOwner)
 
     // Parse package metadata from `swift package dump-package`.
-    let package = try await PackageInfo(from: url)
+    let package = try await PackageInfo(from: url, useIsolatedScratchPath: calledFromPlugin)
 
     // Derive platforms only when no explicit platform settings were provided.
     if repo.enabledPlatforms.isEmpty {

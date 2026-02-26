@@ -18,9 +18,31 @@ struct PackageInfo: Codable {
   let targets: [TargetInfo]
 
   /// Reads and decodes `swift package dump-package` output.
-  init(from url: URL) async throws {
+  init(from url: URL, useIsolatedScratchPath: Bool = false) async throws {
+    let scratchPath: URL?
+    if useIsolatedScratchPath {
+      // Nested SwiftPM invocations (plugin -> tool -> dump-package) can contend on `index.lock`.
+      // Using a unique scratch path for the inner invocation avoids that deadlock.
+      let path = FileManager.default.temporaryDirectory
+        .appendingPathComponent("actionbuildercore-swiftpm-\(UUID().uuidString)", isDirectory: true)
+      try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
+      scratchPath = path
+    } else {
+      scratchPath = nil
+    }
+    defer {
+      if let scratchPath {
+        try? FileManager.default.removeItem(at: scratchPath)
+      }
+    }
+
     let spm = Runner(command: "swift", cwd: url)
-    let output = spm.run(["package", "dump-package"])
+    let arguments = if let scratchPath {
+      ["package", "--scratch-path", scratchPath.path, "dump-package"]
+    } else {
+      ["package", "dump-package"]
+    }
+    let output = spm.run(arguments)
     try await output.throwIfFailed(
       Error.launchingSwiftFailed(url, await output.stderr.string)
     )

@@ -26,7 +26,8 @@ import Foundation
       url = URL(fileURLWithPath: path, isDirectory: true).resolvingSymlinksInPath()
     }
 
-    let repo = try await Repo(forPackage: url)
+    let calledFromPlugin = options.contains("--called-from-plugin")
+    let repo = try await Repo(forPackage: url, calledFromPlugin: calledFromPlugin)
 
     if options.contains("--create-config") {
       makeSettings(for: repo, at: url)
