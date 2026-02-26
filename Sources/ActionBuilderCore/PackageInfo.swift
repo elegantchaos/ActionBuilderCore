@@ -23,7 +23,10 @@ struct PackageInfo: Codable {
     if useIsolatedScratchPath {
       // Nested SwiftPM invocations (plugin -> tool -> dump-package) can contend on `index.lock`.
       // Using a unique scratch path for the inner invocation avoids that deadlock.
-      let path = FileManager.default.temporaryDirectory
+      // In plugin mode this must live inside the package directory, because command
+      // plugins are only allowed to write there.
+      let path = url
+        .appendingPathComponent(".build", isDirectory: true)
         .appendingPathComponent("actionbuildercore-swiftpm-\(UUID().uuidString)", isDirectory: true)
       try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
       scratchPath = path
