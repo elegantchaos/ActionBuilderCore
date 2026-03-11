@@ -243,8 +243,6 @@ func testYAMLiOSSwift57() throws {
                       name=$(extract_destination_field "$line" "name")
 
                       [[ -n "$id" && -n "$os" ]] || continue
-                      lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
-                      [[ "$lower_os" != *"beta"* ]] || continue
 
                       IFS=. read -r major minor patch <<< "$os"
                       printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
@@ -319,8 +317,6 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
   #expect(source.contains("pick_destination() {"))
   #expect(source.contains("source \"destination-picker.sh\""))
   #expect(source.contains("pick_destination \"tvOS\" \"tvOS Simulator\" \"Apple TV\" \"No available non-beta Apple TV simulator destination found.\""))
-  #expect(source.contains("lower_os=$(printf '%s\\n' \"$os\" | tr '[:upper:]' '[:lower:]')"))
-  #expect(source.contains("[[ \"$lower_os\" != *\"beta\"* ]] || continue"))
   #expect(
     source.contains("echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID).\""))
   #expect(
