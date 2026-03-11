@@ -5,6 +5,13 @@
 
 /// Describes a supported platform and emits workflow YAML for that platform's jobs.
 public final class Platform: Identifiable, Sendable {
+  /// Data used to build the runtime simulator destination picker for a platform.
+  fileprivate struct DestinationPicker {
+    let simulatorPlatform: String
+    let deviceNamePrefix: String
+    let failureMessage: String
+  }
+
   /// Stable platform identifier used in config and job IDs.
   public let id: ID
   /// Human-readable platform name used in job titles.
@@ -46,36 +53,49 @@ public final class Platform: Identifiable, Sendable {
     self.subPlatforms = subPlatforms
   }
 
-  /// Xcodebuild command to download support for this platform.
-  public var xcodePlatformDownloadCommand: String {
-    let platform: String
-    let name: String
-
+  /// Destination-picking configuration for simulator-backed Xcode platforms.
+  fileprivate var destinationPicker: DestinationPicker? {
     switch id {
       case .macOS, .catalyst, .linux, .xcode:
-        return ""
+        return nil
 
       case .iOS:
-        platform = "iOS Simulator"
-        name = "iPhone"
+        return DestinationPicker(
+          simulatorPlatform: "iOS Simulator",
+          deviceNamePrefix: "iPhone",
+          failureMessage: "No available non-beta iPhone simulator destination found.")
 
       case .tvOS:
-        platform = "tvOS Simulator"
-        name = "Apple TV"
+        return DestinationPicker(
+          simulatorPlatform: "tvOS Simulator",
+          deviceNamePrefix: "Apple TV",
+          failureMessage: "No available non-beta Apple TV simulator destination found.")
 
       case .watchOS:
-        platform = "watchOS Simulator"
-        name = "Apple Watch"
+        return DestinationPicker(
+          simulatorPlatform: "watchOS Simulator",
+          deviceNamePrefix: "Apple Watch",
+          failureMessage: "No available non-beta Apple Watch simulator destination found.")
+
       case .visionOS:
-        platform = "visionOS Simulator"
-        name = "Apple Vision"
+        return DestinationPicker(
+          simulatorPlatform: "visionOS Simulator",
+          deviceNamePrefix: "Apple Vision",
+          failureMessage: "No available non-beta Apple Vision simulator destination found.")
+    }
+  }
+
+  /// Xcodebuild command to download support for this platform.
+  public var xcodePlatformDownloadCommand: String {
+    guard let picker = destinationPicker else {
+      return ""
     }
 
     return
       """
                   xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
                   xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
-                  DESTINATION=$(cat logs/destinations-\(id.rawValue).log | grep "platform:\(platform)" | grep "name:\(name)" | head -n 1 | awk -F" }" '{print$1}' | awk -F"name:" '{print$2}')
+                  pick_destination "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)" "\(picker.failureMessage)"
       """
 
   }
@@ -118,6 +138,7 @@ public final class Platform: Identifiable, Sendable {
         selectToolchainYAML(&job, branch, version)
       } else if !subPlatforms.isEmpty {
         selectXcodeYAML(&job, compiler: compiler)
+        destinationPickerYAML(&job)
       } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
@@ -303,11 +324,14 @@ public final class Platform: Identifiable, Sendable {
     configurations: [Configuration], package: String, test: Bool, compiler: Compiler
   ) -> String {
     var yaml = ""
-    let destination = needsDestination ? "-destination \"name=$DESTINATION\"" : ""
+    let destination = needsDestination ? "-destination \"id=$DESTINATION_ID\"" : ""
+    let destinationDescription =
+      needsDestination ? " on ${DESTINATION_NAME:-unknown} (\(name) ${DESTINATION_OS:-unknown}, $DESTINATION_ID)" : ""
 
     let setup = """
                   set -o pipefail
                   source "setup.sh"
+                  source "destination-picker.sh"
       \(xcodePlatformDownloadCommand)
       """
 
@@ -344,7 +368,7 @@ public final class Platform: Identifiable, Sendable {
                   - name: Test (\(name) \(config.name))
                     run: |
           \(setup)
-                      echo "Testing workspace $WORKSPACE scheme $SCHEME on $DESTINATION."
+                      echo "Testing workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
                       xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
@@ -358,7 +382,7 @@ public final class Platform: Identifiable, Sendable {
                   - name: Build (\(name) \(config))
                     run: |
           \(setup)
-                      echo "Building workspace $WORKSPACE scheme $SCHEME."
+                      echo "Building workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
                       xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
           """
         )
@@ -366,6 +390,58 @@ public final class Platform: Identifiable, Sendable {
     }
 
     return yaml
+  }
+
+  /// Emits a helper script used by Xcode jobs to pick the newest suitable simulator destination.
+  fileprivate func destinationPickerYAML(_ yaml: inout String) {
+    yaml.append(
+      """
+
+              - name: Prepare Destination Picker
+                run: |
+                  cat > destination-picker.sh <<'EOF'
+                  extract_destination_field() {
+                    local line="$1"
+                    local field="$2"
+                    printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
+                  }
+                  pick_destination() {
+                    local platform_id="$1"
+                    local simulator_platform="$2"
+                    local device_name_prefix="$3"
+                    local failure_message="$4"
+                    local destinations_log="logs/destinations-${platform_id}.log"
+
+                    BEST_DESTINATION=$(
+                      while IFS= read -r line
+                      do
+                        [[ "$line" == *"platform:${simulator_platform}"* ]] || continue
+                        [[ "$line" == *"name:${device_name_prefix}"* ]] || continue
+                        [[ "$line" != *"unavailable"* ]] || continue
+
+                        id=$(extract_destination_field "$line" "id")
+                        os=$(extract_destination_field "$line" "OS")
+                        name=$(extract_destination_field "$line" "name")
+
+                        [[ -n "$id" && -n "$os" ]] || continue
+
+                        IFS=. read -r major minor patch <<< "$os"
+                        printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
+                      done < "$destinations_log" | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
+                    )
+                    DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
+                    DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
+                    DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
+                    if [[ "$DESTINATION_ID" == "" ]]
+                    then
+                      echo "::error::$failure_message"
+                      cat "$destinations_log"
+                      exit 1
+                    fi
+                  }
+                  EOF
+      """
+    )
   }
 
   /// Emits an artifact-upload step for the per-job `logs/` directory.
