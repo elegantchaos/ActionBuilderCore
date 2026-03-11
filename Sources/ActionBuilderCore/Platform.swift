@@ -112,7 +112,8 @@ public final class Platform: Identifiable, Sendable {
                       name=$(extract_destination_field "$line" "name")
 
                       [[ -n "$id" && -n "$os" ]] || continue
-                      [[ "${os,,}" != *"beta"* ]] || continue
+                      lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
+                      [[ "$lower_os" != *"beta"* ]] || continue
 
                       IFS=. read -r major minor patch <<< "$os"
                       printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
