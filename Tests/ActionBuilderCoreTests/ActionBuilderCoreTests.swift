@@ -216,6 +216,51 @@ func testYAMLiOSSwift57() throws {
               run: |
                 xcodebuild -version
                 swift --version
+            - name: Prepare Destination Picker
+              run: |
+                cat > destination-picker.sh <<'EOF'
+                extract_destination_field() {
+                  local line="$1"
+                  local field="$2"
+                  printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
+                }
+                pick_destination() {
+                  local platform_id="$1"
+                  local simulator_platform="$2"
+                  local device_name_prefix="$3"
+                  local failure_message="$4"
+                  local destinations_log="logs/destinations-${platform_id}.log"
+
+                  BEST_DESTINATION=$(
+                    while IFS= read -r line
+                    do
+                      [[ "$line" == *"platform:${simulator_platform}"* ]] || continue
+                      [[ "$line" == *"name:${device_name_prefix}"* ]] || continue
+                      [[ "$line" != *"unavailable"* ]] || continue
+
+                      id=$(extract_destination_field "$line" "id")
+                      os=$(extract_destination_field "$line" "OS")
+                      name=$(extract_destination_field "$line" "name")
+
+                      [[ -n "$id" && -n "$os" ]] || continue
+                      lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
+                      [[ "$lower_os" != *"beta"* ]] || continue
+
+                      IFS=. read -r major minor patch <<< "$os"
+                      printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
+                    done < "$destinations_log" | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
+                  )
+                  DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
+                  DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
+                  DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
+                  if [[ "$DESTINATION_ID" == "" ]]
+                  then
+                    echo "::error::$failure_message"
+                    cat "$destinations_log"
+                    exit 1
+                  fi
+                }
+                EOF
             - name: Detect Workspace & Scheme (iOS)
               run: |
                 WORKSPACE="testRepo.xcworkspace"
@@ -237,41 +282,10 @@ func testYAMLiOSSwift57() throws {
               run: |
                 set -o pipefail
                 source "setup.sh"
+                source "destination-picker.sh"
                 xcodebuild -downloadPlatform iOS > logs/download-iOS.log
                 xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
-                extract_destination_field() {
-                  local line="$1"
-                  local field="$2"
-                  printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
-                }
-                BEST_DESTINATION=$(
-                  while IFS= read -r line
-                  do
-                    [[ "$line" == *"platform:iOS Simulator"* ]] || continue
-                    [[ "$line" == *"name:iPhone"* ]] || continue
-                    [[ "$line" != *"unavailable"* ]] || continue
-
-                    id=$(extract_destination_field "$line" "id")
-                    os=$(extract_destination_field "$line" "OS")
-                    name=$(extract_destination_field "$line" "name")
-
-                    [[ -n "$id" && -n "$os" ]] || continue
-                    lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
-                    [[ "$lower_os" != *"beta"* ]] || continue
-
-                    IFS=. read -r major minor patch <<< "$os"
-                    printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
-                  done < logs/destinations-iOS.log | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
-                )
-                DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
-                DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
-                DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
-                if [[ "$DESTINATION_ID" == "" ]]
-                then
-                  echo "::error::No available non-beta iPhone simulator destination found."
-                  cat logs/destinations-iOS.log
-                  exit 1
-                fi
+                pick_destination "iOS" "iOS Simulator" "iPhone" "No available non-beta iPhone simulator destination found."
                 echo "Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (iOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID)."
                 xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
@@ -301,9 +315,10 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
 
   #expect(source.contains("xcodebuild -downloadPlatform tvOS > logs/download-tvOS.log"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-tvOS.log"))
-  #expect(source.contains("[[ \"$line\" == *\"platform:tvOS Simulator\"* ]] || continue"))
-  #expect(source.contains("[[ \"$line\" == *\"name:Apple TV\"* ]] || continue"))
-  #expect(source.contains("echo \"::error::No available non-beta Apple TV simulator destination found.\""))
+  #expect(source.contains("- name: Prepare Destination Picker"))
+  #expect(source.contains("pick_destination() {"))
+  #expect(source.contains("source \"destination-picker.sh\""))
+  #expect(source.contains("pick_destination \"tvOS\" \"tvOS Simulator\" \"Apple TV\" \"No available non-beta Apple TV simulator destination found.\""))
   #expect(source.contains("lower_os=$(printf '%s\\n' \"$os\" | tr '[:upper:]' '[:lower:]')"))
   #expect(source.contains("[[ \"$lower_os\" != *\"beta\"* ]] || continue"))
   #expect(

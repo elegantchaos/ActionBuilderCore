@@ -95,39 +95,7 @@ public final class Platform: Identifiable, Sendable {
       """
                   xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
                   xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
-                  extract_destination_field() {
-                    local line="$1"
-                    local field="$2"
-                    printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
-                  }
-                  BEST_DESTINATION=$(
-                    while IFS= read -r line
-                    do
-                      [[ "$line" == *"platform:\(picker.simulatorPlatform)"* ]] || continue
-                      [[ "$line" == *"name:\(picker.deviceNamePrefix)"* ]] || continue
-                      [[ "$line" != *"unavailable"* ]] || continue
-
-                      id=$(extract_destination_field "$line" "id")
-                      os=$(extract_destination_field "$line" "OS")
-                      name=$(extract_destination_field "$line" "name")
-
-                      [[ -n "$id" && -n "$os" ]] || continue
-                      lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
-                      [[ "$lower_os" != *"beta"* ]] || continue
-
-                      IFS=. read -r major minor patch <<< "$os"
-                      printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
-                    done < logs/destinations-\(id.rawValue).log | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
-                  )
-                  DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
-                  DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
-                  DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
-                  if [[ "$DESTINATION_ID" == "" ]]
-                  then
-                    echo "::error::\(picker.failureMessage)"
-                    cat logs/destinations-\(id.rawValue).log
-                    exit 1
-                  fi
+                  pick_destination "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)" "\(picker.failureMessage)"
       """
 
   }
@@ -170,6 +138,7 @@ public final class Platform: Identifiable, Sendable {
         selectToolchainYAML(&job, branch, version)
       } else if !subPlatforms.isEmpty {
         selectXcodeYAML(&job, compiler: compiler)
+        destinationPickerYAML(&job)
       } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
@@ -362,6 +331,7 @@ public final class Platform: Identifiable, Sendable {
     let setup = """
                   set -o pipefail
                   source "setup.sh"
+                  source "destination-picker.sh"
       \(xcodePlatformDownloadCommand)
       """
 
@@ -420,6 +390,60 @@ public final class Platform: Identifiable, Sendable {
     }
 
     return yaml
+  }
+
+  /// Emits a helper script used by Xcode jobs to pick the newest suitable simulator destination.
+  fileprivate func destinationPickerYAML(_ yaml: inout String) {
+    yaml.append(
+      """
+
+              - name: Prepare Destination Picker
+                run: |
+                  cat > destination-picker.sh <<'EOF'
+                  extract_destination_field() {
+                    local line="$1"
+                    local field="$2"
+                    printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
+                  }
+                  pick_destination() {
+                    local platform_id="$1"
+                    local simulator_platform="$2"
+                    local device_name_prefix="$3"
+                    local failure_message="$4"
+                    local destinations_log="logs/destinations-${platform_id}.log"
+
+                    BEST_DESTINATION=$(
+                      while IFS= read -r line
+                      do
+                        [[ "$line" == *"platform:${simulator_platform}"* ]] || continue
+                        [[ "$line" == *"name:${device_name_prefix}"* ]] || continue
+                        [[ "$line" != *"unavailable"* ]] || continue
+
+                        id=$(extract_destination_field "$line" "id")
+                        os=$(extract_destination_field "$line" "OS")
+                        name=$(extract_destination_field "$line" "name")
+
+                        [[ -n "$id" && -n "$os" ]] || continue
+                        lower_os=$(printf '%s\\n' "$os" | tr '[:upper:]' '[:lower:]')
+                        [[ "$lower_os" != *"beta"* ]] || continue
+
+                        IFS=. read -r major minor patch <<< "$os"
+                        printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
+                      done < "$destinations_log" | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
+                    )
+                    DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
+                    DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
+                    DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
+                    if [[ "$DESTINATION_ID" == "" ]]
+                    then
+                      echo "::error::$failure_message"
+                      cat "$destinations_log"
+                      exit 1
+                    fi
+                  }
+                  EOF
+      """
+    )
   }
 
   /// Emits an artifact-upload step for the per-job `logs/` directory.
