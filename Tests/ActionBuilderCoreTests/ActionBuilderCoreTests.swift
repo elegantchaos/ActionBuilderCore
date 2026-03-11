@@ -239,9 +239,40 @@ func testYAMLiOSSwift57() throws {
                 source "setup.sh"
                 xcodebuild -downloadPlatform iOS > logs/download-iOS.log
                 xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
-                DESTINATION=$(cat logs/destinations-iOS.log | grep "platform:iOS Simulator" | grep "name:iPhone" | head -n 1 | awk -F" }" '{print$1}' | awk -F"name:" '{print$2}')
-                echo "Testing workspace $WORKSPACE scheme $SCHEME on $DESTINATION."
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "name=$DESTINATION" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
+                extract_destination_field() {
+                  local line="$1"
+                  local field="$2"
+                  printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
+                }
+                BEST_DESTINATION=$(
+                  while IFS= read -r line
+                  do
+                    [[ "$line" == *"platform:iOS Simulator"* ]] || continue
+                    [[ "$line" == *"name:iPhone"* ]] || continue
+                    [[ "$line" != *"unavailable"* ]] || continue
+
+                    id=$(extract_destination_field "$line" "id")
+                    os=$(extract_destination_field "$line" "OS")
+                    name=$(extract_destination_field "$line" "name")
+
+                    [[ -n "$id" && -n "$os" ]] || continue
+                    [[ "${os,,}" != *"beta"* ]] || continue
+
+                    IFS=. read -r major minor patch <<< "$os"
+                    printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
+                  done < logs/destinations-iOS.log | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
+                )
+                DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
+                DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
+                DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
+                if [[ "$DESTINATION_ID" == "" ]]
+                then
+                  echo "::error::No available non-beta iPhone simulator destination found."
+                  cat logs/destinations-iOS.log
+                  exit 1
+                fi
+                echo "Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (iOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID)."
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
               uses: actions/upload-artifact@v4
               if: always()
@@ -257,6 +288,27 @@ func testYAMLiOSSwift57() throws {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
   try source.assertMatches(expected)
+}
+
+@Test
+func testYAMLtvOSUsesDynamicDestinationSelection() {
+  let generator = Generator(
+    name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.tvOS], compilers: [.swift510])
+
+  let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
+
+  #expect(source.contains("xcodebuild -downloadPlatform tvOS > logs/download-tvOS.log"))
+  #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-tvOS.log"))
+  #expect(source.contains("[[ \"$line\" == *\"platform:tvOS Simulator\"* ]] || continue"))
+  #expect(source.contains("[[ \"$line\" == *\"name:Apple TV\"* ]] || continue"))
+  #expect(source.contains("echo \"::error::No available non-beta Apple TV simulator destination found.\""))
+  #expect(
+    source.contains("echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID).\""))
+  #expect(
+    source.contains(
+      "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
+    ))
 }
 
 extension String {
