@@ -81,7 +81,9 @@ func testYAMLmacOSSwift57() async throws {
             runs-on: macos-14
             steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
+            - name: Make Logs Directory
+              run: mkdir logs
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -95,10 +97,8 @@ func testYAMLmacOSSwift57() async throws {
                   cat logs/install-xcbeautify.log
                   exit 1
                 fi
-            - name: Make Logs Directory
-              run: mkdir logs
             - name: Select Swift
-              uses: swift-actions/setup-swift@v2
+              uses: swift-actions/setup-swift@v3
               with:
                 swift-version: "5.10"
             - name: Swift Version
@@ -128,7 +128,7 @@ func testYAMLmacOSSwift57() async throws {
                   exit 1
                 fi
             - name: Upload Logs
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               if: always()
               with:
                 name: macOS-swift510-logs
@@ -159,7 +159,9 @@ func testYAMLiOSSwift57() throws {
             runs-on: macos-14
             steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
+            - name: Make Logs Directory
+              run: mkdir logs
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -173,8 +175,6 @@ func testYAMLiOSSwift57() throws {
                   cat logs/install-xcbeautify.log
                   exit 1
                 fi
-            - name: Make Logs Directory
-              run: mkdir logs
             - name: Resolve Xcode Version
               id: resolve-xcode
               run: |
@@ -224,13 +224,10 @@ func testYAMLiOSSwift57() throws {
                   local field="$2"
                   printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
                 }
-                pick_destination() {
-                  local platform_id="$1"
+                load_best_destination() {
+                  local destinations_log="$1"
                   local simulator_platform="$2"
                   local device_name_prefix="$3"
-                  local failure_message="$4"
-                  local destinations_log="logs/destinations-${platform_id}.log"
-
                   BEST_DESTINATION=$(
                     while IFS= read -r line
                     do
@@ -251,10 +248,41 @@ func testYAMLiOSSwift57() throws {
                   DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
                   DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
                   DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
-                  if [[ "$DESTINATION_ID" == "" ]]
+                  [[ "$DESTINATION_NAME" != "" && "$DESTINATION_OS" != "" ]]
+                }
+                pick_destination_if_available() {
+                  local platform_id="$1"
+                  local simulator_platform="$2"
+                  local device_name_prefix="$3"
+                  local destinations_log="logs/destinations-${platform_id}.log"
+
+                  load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
+                }
+                pick_destination() {
+                  local platform_id="$1"
+                  local simulator_platform="$2"
+                  local device_name_prefix="$3"
+                  local failure_message="$4"
+                  local destinations_log="logs/destinations-${platform_id}.log"
+
+                  if ! load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
                   then
                     echo "::error::$failure_message"
                     cat "$destinations_log"
+                    exit 1
+                  fi
+                }
+                boot_destination() {
+                  local platform_id="$1"
+                  local platform_name="$2"
+                  local boot_log="logs/boot-${platform_id}.log"
+
+                  echo "Booting ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                  xcrun simctl boot "$DESTINATION_ID" >"$boot_log" 2>&1 || true
+                  if ! xcrun simctl bootstatus "$DESTINATION_ID" -b >>"$boot_log" 2>&1
+                  then
+                    echo "::error::Failed to boot ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                    cat "$boot_log"
                     exit 1
                   fi
                 }
@@ -281,13 +309,22 @@ func testYAMLiOSSwift57() throws {
                 set -o pipefail
                 source "setup.sh"
                 source "destination-picker.sh"
-                xcodebuild -downloadPlatform iOS > logs/download-iOS.log
                 xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
-                pick_destination "iOS" "iOS Simulator" "iPhone" "No available non-beta iPhone simulator destination found."
-                echo "Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (iOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID)."
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
+                if pick_destination_if_available "iOS" "iOS Simulator" "iPhone"
+                then
+                  echo "Using existing iOS simulator destination."
+                else
+                  echo "No available iOS simulator destination found. Downloading platform support."
+                  xcodebuild -downloadPlatform iOS > logs/download-iOS.log
+                  xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
+                  pick_destination "iOS" "iOS Simulator" "iPhone" "No available non-beta iPhone simulator destination found."
+                fi
+                echo "Selected iOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                boot_destination "iOS" "iOS"
+                echo "Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (iOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "platform=iOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               if: always()
               with:
                 name: xcode-swift510-logs
@@ -311,18 +348,58 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
-  #expect(source.contains("xcodebuild -downloadPlatform tvOS > logs/download-tvOS.log"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-tvOS.log"))
   #expect(source.contains("- name: Prepare Destination Picker"))
+  #expect(source.contains("pick_destination_if_available() {"))
   #expect(source.contains("pick_destination() {"))
+  #expect(source.contains("boot_destination() {"))
   #expect(source.contains("source \"destination-picker.sh\""))
+  #expect(source.contains("if pick_destination_if_available \"tvOS\" \"tvOS Simulator\" \"Apple TV\""))
+  #expect(source.contains("xcodebuild -downloadPlatform tvOS > logs/download-tvOS.log"))
   #expect(source.contains("pick_destination \"tvOS\" \"tvOS Simulator\" \"Apple TV\" \"No available non-beta Apple TV simulator destination found.\""))
   #expect(
-    source.contains("echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, $DESTINATION_ID).\""))
+    source.contains("echo \"Selected tvOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
+  #expect(source.contains("boot_destination \"tvOS\" \"tvOS\""))
+  #expect(
+    source.contains("echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(
     source.contains(
-      "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
+      "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=tvOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
     ))
+}
+
+@Test
+func testYAMLLinuxSkipsSetupSwiftSignatureVerification() {
+  let generator = Generator(
+    name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.linux], compilers: [.swift510])
+
+  let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
+
+  #expect(source.contains("uses: swift-actions/setup-swift@v3"))
+  #expect(source.contains("swift-version: \"5.10\""))
+  #expect(source.contains("skip-verify-signature: true"))
+}
+
+@Test
+func testYAMLwatchOSUsesDynamicDestinationSelection() {
+  let generator = Generator(
+    name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.watchOS], compilers: [.swift510])
+
+  let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
+
+  #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-watchOS.log"))
+  #expect(source.contains("if pick_destination_if_available \"watchOS\" \"watchOS Simulator\" \"Apple Watch\""))
+  #expect(source.contains("xcodebuild -downloadPlatform watchOS > logs/download-watchOS.log"))
+  #expect(source.contains("pick_destination \"watchOS\" \"watchOS Simulator\" \"Apple Watch\" \"No available non-beta Apple Watch simulator destination found.\""))
+  #expect(
+    source.contains("echo \"Selected watchOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
+  #expect(source.contains("boot_destination \"watchOS\" \"watchOS\""))
+  #expect(
+    source.contains("echo \"Building workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (watchOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
+  #expect(
+    source.contains("xcodebuild clean build -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=watchOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-watchOS-build-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"))
 }
 
 extension String {

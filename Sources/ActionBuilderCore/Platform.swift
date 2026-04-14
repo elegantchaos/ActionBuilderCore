@@ -93,9 +93,18 @@ public final class Platform: Identifiable, Sendable {
 
     return
       """
-                  xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
                   xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
-                  pick_destination "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)" "\(picker.failureMessage)"
+                  if pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
+                  then
+                    echo "Using existing \(name) simulator destination."
+                  else
+                    echo "No available \(name) simulator destination found. Downloading platform support."
+                    xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
+                    xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
+                    pick_destination "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)" "\(picker.failureMessage)"
+                  fi
+                  echo "Selected \(name) simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                  boot_destination "\(id.rawValue)" "\(name)"
       """
 
   }
@@ -132,7 +141,6 @@ public final class Platform: Identifiable, Sendable {
 
       containerYAML(&job, compiler, &xcodeToolchain, &xcodeVersion)
       commonYAML(&job)
-      makeLogsYAML(&job)
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
@@ -197,13 +205,18 @@ public final class Platform: Identifiable, Sendable {
         """
       )
     } else {
+      // TODO: Remove this Linux-only workaround once setup-swift@v3's signature verification
+      // is reliable again in GitHub-hosted CI. References:
+      // https://github.com/swift-actions/setup-swift/blob/v3/action.yml
+      // https://docs.github.com/en/actions/how-tos/use-cases-and-examples/building-and-testing/building-and-testing-swift?apiVersion=2022-11-28
+      let skipVerification = id == .linux ? "\n            skip-verify-signature: true" : ""
       yaml.append(
         """
 
                 - name: Select Swift
-                  uses: swift-actions/setup-swift@v2
+                  uses: swift-actions/setup-swift@v3
                   with:
-                    swift-version: "\(compiler.short)"
+                    swift-version: "\(compiler.short)"\(skipVerification)
         """
       )
     }
@@ -324,9 +337,17 @@ public final class Platform: Identifiable, Sendable {
     configurations: [Configuration], package: String, test: Bool, compiler: Compiler
   ) -> String {
     var yaml = ""
-    let destination = needsDestination ? "-destination \"id=$DESTINATION_ID\"" : ""
-    let destinationDescription =
-      needsDestination ? " on ${DESTINATION_NAME:-unknown} (\(name) ${DESTINATION_OS:-unknown}, $DESTINATION_ID)" : ""
+    let destination: String
+    let destinationDescription: String
+    if needsDestination, let picker = destinationPicker {
+      destination =
+        "-destination \"platform=\(picker.simulatorPlatform),OS=$DESTINATION_OS,name=$DESTINATION_NAME\""
+      destinationDescription =
+        " on ${DESTINATION_NAME:-unknown} (\(name) ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})"
+    } else {
+      destination = ""
+      destinationDescription = ""
+    }
 
     let setup = """
                   set -o pipefail
@@ -405,13 +426,10 @@ public final class Platform: Identifiable, Sendable {
                     local field="$2"
                     printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
                   }
-                  pick_destination() {
-                    local platform_id="$1"
+                  load_best_destination() {
+                    local destinations_log="$1"
                     local simulator_platform="$2"
                     local device_name_prefix="$3"
-                    local failure_message="$4"
-                    local destinations_log="logs/destinations-${platform_id}.log"
-
                     BEST_DESTINATION=$(
                       while IFS= read -r line
                       do
@@ -432,10 +450,41 @@ public final class Platform: Identifiable, Sendable {
                     DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
                     DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
                     DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
-                    if [[ "$DESTINATION_ID" == "" ]]
+                    [[ "$DESTINATION_NAME" != "" && "$DESTINATION_OS" != "" ]]
+                  }
+                  pick_destination_if_available() {
+                    local platform_id="$1"
+                    local simulator_platform="$2"
+                    local device_name_prefix="$3"
+                    local destinations_log="logs/destinations-${platform_id}.log"
+
+                    load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
+                  }
+                  pick_destination() {
+                    local platform_id="$1"
+                    local simulator_platform="$2"
+                    local device_name_prefix="$3"
+                    local failure_message="$4"
+                    local destinations_log="logs/destinations-${platform_id}.log"
+
+                    if ! load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
                     then
                       echo "::error::$failure_message"
                       cat "$destinations_log"
+                      exit 1
+                    fi
+                  }
+                  boot_destination() {
+                    local platform_id="$1"
+                    local platform_name="$2"
+                    local boot_log="logs/boot-${platform_id}.log"
+
+                    echo "Booting ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                    xcrun simctl boot "$DESTINATION_ID" >"$boot_log" 2>&1 || true
+                    if ! xcrun simctl bootstatus "$DESTINATION_ID" -b >>"$boot_log" 2>&1
+                    then
+                      echo "::error::Failed to boot ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                      cat "$boot_log"
                       exit 1
                     fi
                   }
@@ -450,7 +499,7 @@ public final class Platform: Identifiable, Sendable {
       """
 
               - name: Upload Logs
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v7
                 if: always()
                 with:
                   name: \(id)-\(compiler.id)-logs
@@ -615,7 +664,9 @@ public final class Platform: Identifiable, Sendable {
 
               steps:
               - name: Checkout
-                uses: actions/checkout@v4
+                uses: actions/checkout@v6
+              - name: Make Logs Directory
+                run: mkdir logs
       """
     )
 
@@ -639,17 +690,6 @@ public final class Platform: Identifiable, Sendable {
         """
       )
     }
-  }
-
-  /// Emits the step that creates the job-local `logs/` directory.
-  fileprivate func makeLogsYAML(_ yaml: inout String) {
-    yaml.append(
-      """
-
-              - name: Make Logs Directory
-                run: mkdir logs
-      """
-    )
   }
 
 }
