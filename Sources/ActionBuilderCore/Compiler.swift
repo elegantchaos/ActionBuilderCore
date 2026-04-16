@@ -89,6 +89,8 @@ public final class Compiler: Identifiable, Sendable {
     case swift61
     /// Swift 6.2.
     case swift62
+    /// Swift 6.3.
+    case swift63
 
     /// symbolic ID which indicates the latest Swift version.
     case swiftLatest
@@ -100,7 +102,7 @@ public final class Compiler: Identifiable, Sendable {
     static let earliestRelease = Self.swift510
 
     /// Actual ID of the latest fullrelease we know about.
-    static let latestRelease = Self.swift62
+    static let latestRelease = Self.swift63
 
     /// Converts a compiler ID to a numeric `(major, minor)` pair.
     /// Symbolic IDs return `nil`.
@@ -113,6 +115,7 @@ public final class Compiler: Identifiable, Sendable {
         case .swift60: return (6, 0)
         case .swift61: return (6, 1)
         case .swift62: return (6, 2)
+        case .swift63: return (6, 3)
         case .swiftLatest, .swiftNightly: return nil
       }
     }
@@ -139,10 +142,14 @@ public final class Compiler: Identifiable, Sendable {
       .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-24.04",
       mac: .xcode(version: "26.2.0", image: "macos-15")),
 
+    Compiler(
+      .swift63, name: "Swift 6.3", short: "6.3", linux: "ubuntu-24.04",
+      mac: .xcode(version: "26.4.0", image: "macos-26")),
+
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(
       .swiftNightly, name: "Swift Development Nightly", short: "dev",
       linux: "swiftlang/swift:nightly",
-      mac: .toolchain(version: "26.2.0", branch: "development", image: "macos-15")),
+      mac: .toolchain(version: "26.4.0", branch: "development", image: "macos-26")),
   ]
 }
