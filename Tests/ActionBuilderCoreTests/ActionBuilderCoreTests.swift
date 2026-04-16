@@ -183,7 +183,7 @@ func testYAMLiOSSwift57() throws {
                 while read -r APP
                 do
                   DEV_DIR="$APP/Contents/Developer"
-                  SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\.[0-9]+).*/\1/')
+                  SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
                   XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
                   if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
                   then
@@ -365,7 +365,8 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
     source.contains("echo \"Selected tvOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(source.contains("boot_destination \"tvOS\" \"tvOS\""))
   #expect(
-    source.contains("echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
+    source.contains(
+      "echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(
     source.contains(
       "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=tvOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
@@ -396,14 +397,19 @@ func testYAMLwatchOSUsesDynamicDestinationSelection() {
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-watchOS.log"))
   #expect(source.contains("if pick_destination_if_available \"watchOS\" \"watchOS Simulator\" \"Apple Watch\""))
   #expect(source.contains("xcodebuild -downloadPlatform watchOS > logs/download-watchOS.log"))
-  #expect(source.contains("pick_destination \"watchOS\" \"watchOS Simulator\" \"Apple Watch\" \"No available non-beta Apple Watch simulator destination found.\""))
+  #expect(
+    source.contains("pick_destination \"watchOS\" \"watchOS Simulator\" \"Apple Watch\" \"No available non-beta Apple Watch simulator destination found.\""))
   #expect(
     source.contains("echo \"Selected watchOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(source.contains("boot_destination \"watchOS\" \"watchOS\""))
   #expect(
-    source.contains("echo \"Building workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (watchOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
+    source.contains(
+      "echo \"Building workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (watchOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""
+    ))
   #expect(
-    source.contains("xcodebuild clean build -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=watchOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-watchOS-build-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"))
+    source.contains(
+      "xcodebuild clean build -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=watchOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-watchOS-build-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
+    ))
 }
 
 extension String {
