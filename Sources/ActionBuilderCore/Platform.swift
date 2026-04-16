@@ -577,11 +577,16 @@ public final class Platform: Identifiable, Sendable {
                   while read -r APP
                   do
                     DEV_DIR="$APP/Contents/Developer"
-                    SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
+                    SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\.[0-9]+).*/\1/')
                     XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
                     if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
                     then
                       FOUND_XCODE="$XCODE_VERSION"
+                      APP_IS_BETA=$(echo "$APP" | grep -E 'beta' -i)
+                      if [[ "$APP_IS_BETA" != "" ]]
+                      then
+                        FOUND_XCODE="$FOUND_XCODE-beta"
+                      fi
                       break
                     fi
                   done < <(ls -d /Applications/Xcode*.app | sort -Vr)
