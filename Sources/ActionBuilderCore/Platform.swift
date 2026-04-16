@@ -564,6 +564,7 @@ public final class Platform: Identifiable, Sendable {
   }
 
   /// Emits steps that resolve and select the Xcode version matching the requested Swift version.
+  // TODO: it wouls be better to pick the oldest Xcode version that supports the requested Swift version, to avoid using betas when they aren't necessary.
   fileprivate func selectXcodeYAML(_ yaml: inout String, compiler: Compiler) {
     yaml.append(
       """
