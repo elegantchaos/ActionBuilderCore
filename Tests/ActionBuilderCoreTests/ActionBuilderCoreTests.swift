@@ -180,6 +180,7 @@ func testYAMLiOSSwift57() throws {
               run: |
                 REQUESTED_SWIFT="5.10"
                 ls -d /Applications/Xcode* > logs/xcode-versions.log
+                FOUND_XCODE=""
                 while read -r APP
                 do
                   DEV_DIR="$APP/Contents/Developer"
