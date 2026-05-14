@@ -214,9 +214,10 @@ public final class Platform: Identifiable, Sendable {
         """
 
                 - name: Select Swift
-                  uses: swift-actions/setup-swift@v3
+                  uses: elegantchaos/setup-swift@allow-patch
                   with:
                     swift-version: "\(compiler.short)"\(skipVerification)
+                    allow-patch: true
         """
       )
     }

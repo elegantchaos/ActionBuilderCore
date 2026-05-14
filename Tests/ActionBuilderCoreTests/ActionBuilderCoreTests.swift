@@ -98,7 +98,7 @@ func testYAMLmacOSSwift57() async throws {
                   exit 1
                 fi
             - name: Select Swift
-              uses: swift-actions/setup-swift@v3
+              uses: elegantchaos/setup-swift@allow-patch
               with:
                 swift-version: "5.10"
             - name: Swift Version
@@ -382,7 +382,7 @@ func testYAMLLinuxSkipsSetupSwiftSignatureVerification() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
-  #expect(source.contains("uses: swift-actions/setup-swift@v3"))
+  #expect(source.contains("uses: elegantchaos/setup-swift@allow-patch"))
   #expect(source.contains("swift-version: \"5.10\""))
   #expect(source.contains("skip-verify-signature: true"))
 }
