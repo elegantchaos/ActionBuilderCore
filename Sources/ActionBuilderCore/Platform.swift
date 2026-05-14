@@ -565,8 +565,15 @@ public final class Platform: Identifiable, Sendable {
   }
 
   /// Emits steps that resolve and select the Xcode version matching the requested Swift version.
-  // TODO: it wouls be better to pick the oldest Xcode version that supports the requested Swift version, to avoid using betas when they aren't necessary.
   fileprivate func selectXcodeYAML(_ yaml: inout String, compiler: Compiler) {
+    let preferredXcodeMajorMinor: String
+    switch compiler.mac {
+      case .xcode(let version, _):
+        preferredXcodeMajorMinor = version.split(separator: ".").prefix(2).joined(separator: ".")
+      case .toolchain:
+        preferredXcodeMajorMinor = ""
+    }
+
     yaml.append(
       """
 
@@ -574,6 +581,7 @@ public final class Platform: Identifiable, Sendable {
                 id: resolve-xcode
                 run: |
                   REQUESTED_SWIFT="\(compiler.short)"
+                  PREFERRED_XCODE="\(preferredXcodeMajorMinor)"
                   ls -d /Applications/Xcode* > logs/xcode-versions.log
                   FOUND_XCODE=""
                   while read -r APP
@@ -588,7 +596,10 @@ public final class Platform: Identifiable, Sendable {
                       then
                         FOUND_XCODE="$FOUND_XCODE-beta"
                       fi
-                      break
+                      if [[ "$XCODE_VERSION" == "$PREFERRED_XCODE"* ]]
+                      then
+                        break
+                      fi
                     fi
                   done < <(ls -d /Applications/Xcode*.app | sort -Vr)
 
@@ -672,7 +683,17 @@ public final class Platform: Identifiable, Sendable {
               - name: Checkout
                 uses: actions/checkout@v6
               - name: Make Logs Directory
-                run: mkdir logs
+                run: |
+                  mkdir logs
+                  {
+                    echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                    echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
+                    echo "workflow=${GITHUB_WORKFLOW:-unknown}"
+                    echo "job=${GITHUB_JOB:-unknown}"
+                    echo "run_id=${GITHUB_RUN_ID:-unknown}"
+                    echo "ref=${GITHUB_REF:-unknown}"
+                    echo "sha=${GITHUB_SHA:-unknown}"
+                  } > logs/run.log
       """
     )
 

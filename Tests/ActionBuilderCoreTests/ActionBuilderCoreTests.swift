@@ -83,7 +83,17 @@ func testYAMLmacOSSwift57() async throws {
             - name: Checkout
               uses: actions/checkout@v6
             - name: Make Logs Directory
-              run: mkdir logs
+              run: |
+                mkdir logs
+                {
+                  echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
+                  echo "workflow=${GITHUB_WORKFLOW:-unknown}"
+                  echo "job=${GITHUB_JOB:-unknown}"
+                  echo "run_id=${GITHUB_RUN_ID:-unknown}"
+                  echo "ref=${GITHUB_REF:-unknown}"
+                  echo "sha=${GITHUB_SHA:-unknown}"
+                } > logs/run.log
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -162,7 +172,17 @@ func testYAMLiOSSwift57() throws {
             - name: Checkout
               uses: actions/checkout@v6
             - name: Make Logs Directory
-              run: mkdir logs
+              run: |
+                mkdir logs
+                {
+                  echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
+                  echo "workflow=${GITHUB_WORKFLOW:-unknown}"
+                  echo "job=${GITHUB_JOB:-unknown}"
+                  echo "run_id=${GITHUB_RUN_ID:-unknown}"
+                  echo "ref=${GITHUB_REF:-unknown}"
+                  echo "sha=${GITHUB_SHA:-unknown}"
+                } > logs/run.log
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -180,6 +200,7 @@ func testYAMLiOSSwift57() throws {
               id: resolve-xcode
               run: |
                 REQUESTED_SWIFT="5.10"
+                PREFERRED_XCODE="15.4"
                 ls -d /Applications/Xcode* > logs/xcode-versions.log
                 FOUND_XCODE=""
                 while read -r APP
@@ -194,7 +215,10 @@ func testYAMLiOSSwift57() throws {
                     then
                       FOUND_XCODE="$FOUND_XCODE-beta"
                     fi
-                    break
+                    if [[ "$XCODE_VERSION" == "$PREFERRED_XCODE"* ]]
+                    then
+                      break
+                    fi
                   fi
                 done < <(ls -d /Applications/Xcode*.app | sort -Vr)
 
