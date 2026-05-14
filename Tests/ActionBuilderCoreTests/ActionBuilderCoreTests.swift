@@ -84,7 +84,12 @@ func testYAMLmacOSSwift57() async throws {
               uses: actions/checkout@v6
             - name: Make Logs Directory
               run: |
-                mkdir logs
+                LOGS_DIR="${GITHUB_WORKSPACE:-$PWD}/logs"
+                mkdir -p "$LOGS_DIR"
+                if [[ "$PWD/logs" != "$LOGS_DIR" && ! -e logs ]]
+                then
+                  ln -s "$LOGS_DIR" logs
+                fi
                 {
                   echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                   echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
@@ -93,7 +98,7 @@ func testYAMLmacOSSwift57() async throws {
                   echo "run_id=${GITHUB_RUN_ID:-unknown}"
                   echo "ref=${GITHUB_REF:-unknown}"
                   echo "sha=${GITHUB_SHA:-unknown}"
-                } > logs/run.log
+                } > "$LOGS_DIR/run.log"
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -173,7 +178,12 @@ func testYAMLiOSSwift57() throws {
               uses: actions/checkout@v6
             - name: Make Logs Directory
               run: |
-                mkdir logs
+                LOGS_DIR="${GITHUB_WORKSPACE:-$PWD}/logs"
+                mkdir -p "$LOGS_DIR"
+                if [[ "$PWD/logs" != "$LOGS_DIR" && ! -e logs ]]
+                then
+                  ln -s "$LOGS_DIR" logs
+                fi
                 {
                   echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                   echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
@@ -182,7 +192,7 @@ func testYAMLiOSSwift57() throws {
                   echo "run_id=${GITHUB_RUN_ID:-unknown}"
                   echo "ref=${GITHUB_REF:-unknown}"
                   echo "sha=${GITHUB_SHA:-unknown}"
-                } > logs/run.log
+                } > "$LOGS_DIR/run.log"
             - name: Install xcbeautify
               run: |
                 if command -v xcbeautify >/dev/null 2>&1
@@ -351,7 +361,7 @@ func testYAMLiOSSwift57() throws {
                 echo "Selected iOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
                 boot_destination "iOS" "iOS"
                 echo "Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (iOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "platform=iOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
+                xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-iOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions
             - name: Upload Logs
               uses: actions/upload-artifact@v7
               if: always()
@@ -394,7 +404,7 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
       "echo \"Testing workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (tvOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(
     source.contains(
-      "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=tvOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
+      "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
     ))
 }
 
@@ -433,7 +443,7 @@ func testYAMLwatchOSUsesDynamicDestinationSelection() {
     ))
   #expect(
     source.contains(
-      "xcodebuild clean build -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"platform=watchOS Simulator,OS=$DESTINATION_OS,name=$DESTINATION_NAME\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-watchOS-build-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
+      "xcodebuild clean build -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-watchOS-build-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
     ))
 }
 

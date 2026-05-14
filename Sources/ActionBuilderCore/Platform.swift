@@ -340,9 +340,8 @@ public final class Platform: Identifiable, Sendable {
     var yaml = ""
     let destination: String
     let destinationDescription: String
-    if needsDestination, let picker = destinationPicker {
-      destination =
-        "-destination \"platform=\(picker.simulatorPlatform),OS=$DESTINATION_OS,name=$DESTINATION_NAME\""
+    if needsDestination, destinationPicker != nil {
+      destination = "-destination \"id=$DESTINATION_ID\""
       destinationDescription =
         " on ${DESTINATION_NAME:-unknown} (\(name) ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})"
     } else {
@@ -684,7 +683,12 @@ public final class Platform: Identifiable, Sendable {
                 uses: actions/checkout@v6
               - name: Make Logs Directory
                 run: |
-                  mkdir logs
+                  LOGS_DIR="${GITHUB_WORKSPACE:-$PWD}/logs"
+                  mkdir -p "$LOGS_DIR"
+                  if [[ "$PWD/logs" != "$LOGS_DIR" && ! -e logs ]]
+                  then
+                    ln -s "$LOGS_DIR" logs
+                  fi
                   {
                     echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                     echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
@@ -693,7 +697,7 @@ public final class Platform: Identifiable, Sendable {
                     echo "run_id=${GITHUB_RUN_ID:-unknown}"
                     echo "ref=${GITHUB_REF:-unknown}"
                     echo "sha=${GITHUB_SHA:-unknown}"
-                  } > logs/run.log
+                  } > "$LOGS_DIR/run.log"
       """
     )
 
