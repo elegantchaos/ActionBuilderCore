@@ -4,9 +4,9 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 public struct EndToEnd {
-    public let value: Int
+  public let value: Int
 
-    public init(value: Int = 42) {
-        self.value = value
-    }
+  public init(value: Int = 42) {
+    self.value = value
+  }
 }

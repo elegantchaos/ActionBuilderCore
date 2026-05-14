@@ -8,6 +8,6 @@ import Testing
 @testable import EndToEnd
 
 @Test func endToEndValueIsCorrect() {
-    let subject = EndToEnd()
-    #expect(subject.value == 42)
+  let subject = EndToEnd()
+  #expect(subject.value == 42)
 }
