@@ -101,6 +101,7 @@ func testYAMLmacOSSwift57() async throws {
               uses: elegantchaos/setup-swift@allow-patch
               with:
                 swift-version: "5.10"
+                allow-patch: true
             - name: Swift Version
               run: swift --version
             - name: Build (release)
