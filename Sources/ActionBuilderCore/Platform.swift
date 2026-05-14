@@ -584,8 +584,7 @@ public final class Platform: Identifiable, Sendable {
                     if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
                     then
                       FOUND_XCODE="$XCODE_VERSION"
-                      APP_IS_BETA=$(echo "$APP" | grep -E 'beta' -i)
-                      if [[ "$APP_IS_BETA" != "" ]]
+                      if [[ "$APP" == *[Bb][Ee][Tt][Aa]* ]]
                       then
                         FOUND_XCODE="$FOUND_XCODE-beta"
                       fi
