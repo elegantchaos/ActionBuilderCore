@@ -140,7 +140,7 @@ public final class Compiler: Identifiable, Sendable {
 
     Compiler(
       .swift62, name: "Swift 6.2", short: "6.2", linux: "ubuntu-24.04",
-      mac: .xcode(version: "26.3.0", image: "macos-15")),
+      mac: .xcode(version: "26.3.0", image: "macos-26")),
 
     Compiler(
       .swift63, name: "Swift 6.3", short: "6.3", linux: "ubuntu-24.04",
