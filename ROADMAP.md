@@ -16,3 +16,7 @@ Have the workflow fetch and build the tools (probably by cloning this repo), the
 The tools would need to compile on all supported platforms, and using the earliest supported Swift version.
 
 Alternatively we could download pre-compiled binaries, but that is likely to cause a maintenance headache.
+
+## Use Matrix
+
+Can we use the GH actions matrix support to make the generated workflows more compact?
