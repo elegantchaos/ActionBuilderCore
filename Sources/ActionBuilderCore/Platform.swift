@@ -92,6 +92,7 @@ public final class Platform: Identifiable, Sendable {
 
     return
       """
+                  xcrun simctl list > logs/simctl-list-\(id.rawValue).log 2>&1
                   xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
                   if pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
                   then

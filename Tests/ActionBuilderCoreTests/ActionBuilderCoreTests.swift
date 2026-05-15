@@ -348,6 +348,7 @@ func testYAMLiOSSwift57() throws {
                 set -o pipefail
                 source "setup.sh"
                 source "destination-picker.sh"
+                xcrun simctl list > logs/simctl-list-iOS.log 2>&1
                 xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
                 if pick_destination_if_available "iOS" "iOS Simulator" "iPhone"
                 then
@@ -387,6 +388,7 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
+  #expect(source.contains("xcrun simctl list > logs/simctl-list-tvOS.log 2>&1"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-tvOS.log"))
   #expect(source.contains("- name: Prepare Destination Picker"))
   #expect(source.contains("pick_destination_if_available() {"))
@@ -447,6 +449,7 @@ func testYAMLwatchOSUsesDynamicDestinationSelection() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
+  #expect(source.contains("xcrun simctl list > logs/simctl-list-watchOS.log 2>&1"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-watchOS.log"))
   #expect(source.contains("if pick_destination_if_available \"watchOS\" \"watchOS Simulator\" \"Apple Watch\""))
   #expect(source.contains("xcodebuild -downloadPlatform watchOS > logs/download-watchOS.log"))
