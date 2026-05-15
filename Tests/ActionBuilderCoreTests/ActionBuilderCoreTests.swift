@@ -170,7 +170,7 @@ func testYAMLiOSSwift57() throws {
     name: Tests
     on: [push, pull_request]
     jobs:
-        xcode-swift510:
+        iOS-swift510:
             name: iOS (Swift 5.10, Xcode matching Swift 5.10)
             runs-on: macos-14
             steps:
@@ -366,7 +366,7 @@ func testYAMLiOSSwift57() throws {
               uses: actions/upload-artifact@v7
               if: always()
               with:
-                name: xcode-swift510-logs
+                name: iOS-swift510-logs
                 path: logs
 
     """
@@ -406,6 +406,24 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
     source.contains(
       "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
     ))
+}
+
+@Test
+func testYAMLXcodePlatformsUseSeparateJobs() {
+  let generator = Generator(
+    name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS, .tvOS, .watchOS], compilers: [.swift510])
+
+  let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
+
+  #expect(source.contains("iOS-swift510:"))
+  #expect(source.contains("tvOS-swift510:"))
+  #expect(source.contains("watchOS-swift510:"))
+  #expect(!source.contains("xcode-swift510:"))
+  #expect(!source.contains("iOS/tvOS/watchOS"))
+  #expect(source.contains("name: iOS-swift510-logs"))
+  #expect(source.contains("name: tvOS-swift510-logs"))
+  #expect(source.contains("name: watchOS-swift510-logs"))
 }
 
 @Test

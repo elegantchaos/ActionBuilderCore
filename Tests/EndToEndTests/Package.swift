@@ -11,7 +11,7 @@ let package = Package(
   name: "ActionBuilderEndToEnd",
 
   platforms: [
-    .macOS(.v12), .iOS(.v14), .tvOS(.v14), .custom("Ubuntu", versionString: "20.04"),
+    .macOS(.v12), .iOS(.v14), .tvOS(.v14), .watchOS(.v9), .custom("Ubuntu", versionString: "20.04"),
   ],
 
   products: [

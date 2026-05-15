@@ -5,10 +5,13 @@
 
 /// Describes a supported platform and emits workflow YAML for that platform's jobs.
 public final class Platform: Identifiable, Sendable {
-  /// Data used to build the runtime simulator destination picker for a platform.
+  /// Settings used by generated shell to find a concrete simulator destination.
   fileprivate struct DestinationPicker {
+    /// Xcode destination platform string, such as `iOS Simulator`.
     let simulatorPlatform: String
+    /// Device name prefix used to avoid generic placeholder destinations.
     let deviceNamePrefix: String
+    /// Error shown when no concrete destination can be selected.
     let failureMessage: String
   }
 
@@ -16,8 +19,6 @@ public final class Platform: Identifiable, Sendable {
   public let id: ID
   /// Human-readable platform name used in job titles.
   public let name: String
-  /// Sub-platforms grouped into a shared Xcode job.
-  public let subPlatforms: [Platform]
   /// Indicates that the platform requires simulator destination selection.
   public let needsDestination: Bool
 
@@ -30,7 +31,6 @@ public final class Platform: Identifiable, Sendable {
     case visionOS
     case catalyst
     case linux
-    case xcode
   }
 
   /// Default platform list used for automatic platform discovery.
@@ -45,18 +45,17 @@ public final class Platform: Identifiable, Sendable {
 
   /// Creates a platform definition.
   public init(
-    _ id: ID, name: String, needsDestination: Bool = false, subPlatforms: [Platform] = []
+    _ id: ID, name: String, needsDestination: Bool = false
   ) {
     self.id = id
     self.name = name
     self.needsDestination = needsDestination
-    self.subPlatforms = subPlatforms
   }
 
   /// Destination-picking configuration for simulator-backed Xcode platforms.
   fileprivate var destinationPicker: DestinationPicker? {
     switch id {
-      case .macOS, .catalyst, .linux, .xcode:
+      case .macOS, .catalyst, .linux:
         return nil
 
       case .iOS:
@@ -85,8 +84,8 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
-  /// Xcodebuild command to download support for this platform.
-  public var xcodePlatformDownloadCommand: String {
+  /// Shell script that selects and boots a simulator destination for this platform.
+  fileprivate var destinationSelectionYAML: String {
     guard let picker = destinationPicker else {
       return ""
     }
@@ -111,7 +110,7 @@ public final class Platform: Identifiable, Sendable {
 
   /// Returns the display name used for a workflow job.
   public func jobName(with compiler: Compiler) -> String {
-    if !subPlatforms.isEmpty {
+    if needsDestination {
       switch compiler.mac {
         case .xcode(let version, _), .toolchain(let version, _, _):
           let xcodeName = compiler.id == .swiftNightly ? "Xcode \(version)" : "Xcode matching Swift \(compiler.short)"
@@ -128,10 +127,10 @@ public final class Platform: Identifiable, Sendable {
     let shouldTest = repo.testMode != .build
 
     var yaml = ""
-    var xcodeToolchain: String? = nil
-    var xcodeVersion: String? = nil
 
     for compiler in compilers {
+      var xcodeToolchain: String? = nil
+      var xcodeVersion: String? = nil
       var job =
         """
 
@@ -144,25 +143,23 @@ public final class Platform: Identifiable, Sendable {
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
-      } else if !subPlatforms.isEmpty {
+      } else if needsDestination {
         selectXcodeYAML(&job, compiler: compiler)
-        destinationPickerYAML(&job)
       } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
 
-      if subPlatforms.isEmpty {
+      if needsDestination {
+        destinationPickerYAML(&job)
+      }
+
+      if needsDestination {
+        job.append(runXcodebuildYAML(configurations: configurations, package: package, test: shouldTest, compiler: compiler))
+      } else {
         job.append(
           runSwiftYAML(
             configurations: configurations, test: shouldTest,
             customToolchain: xcodeToolchain != nil, compiler: compiler))
-      } else {
-        for platform in subPlatforms {
-          job.append(
-            platform.runXcodebuildYAML(
-              configurations: configurations, package: package, test: shouldTest, compiler: compiler
-            ))
-        }
       }
 
       if repo.uploadLogs {
@@ -353,9 +350,8 @@ public final class Platform: Identifiable, Sendable {
                   set -o pipefail
                   source "setup.sh"
                   source "destination-picker.sh"
-      \(xcodePlatformDownloadCommand)
+      \(destinationSelectionYAML)
       """
-
 
     yaml.append(
       """
@@ -701,7 +697,7 @@ public final class Platform: Identifiable, Sendable {
       """
     )
 
-    if (id == .macOS) || !subPlatforms.isEmpty {
+    if (id == .macOS) || needsDestination {
       yaml.append(
         """
 
