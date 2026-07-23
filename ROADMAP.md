@@ -2,9 +2,9 @@
 
 Ideas / tasks for later consideration.
 
-## Github Action
+## GitHub Action
 
-Move most of the work to a github action?
+Move most of the work to a GitHub Action?
 The generated workflow becomes much simpler, and invokes the action to do most of the heavy lifting.
 
 ## Swift Scripts
@@ -19,4 +19,4 @@ Alternatively we could download pre-compiled binaries, but that is likely to cau
 
 ## Use Matrix
 
-Can we use the GH actions matrix support to make the generated workflows more compact?
+Can we use the GitHub Actions matrix support to make the generated workflows more compact?
