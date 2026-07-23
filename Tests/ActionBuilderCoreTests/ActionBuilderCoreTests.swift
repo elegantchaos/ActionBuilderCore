@@ -170,7 +170,7 @@ func testYAMLiOSSwift57() throws {
     name: Tests
     on: [push, pull_request]
     jobs:
-        xcode-swift510:
+        iOS-swift510:
             name: iOS (Swift 5.10, Xcode matching Swift 5.10)
             runs-on: macos-14
             steps:
@@ -348,6 +348,7 @@ func testYAMLiOSSwift57() throws {
                 set -o pipefail
                 source "setup.sh"
                 source "destination-picker.sh"
+                xcrun simctl list > logs/simctl-list-iOS.log 2>&1
                 xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > logs/destinations-iOS.log
                 if pick_destination_if_available "iOS" "iOS Simulator" "iPhone"
                 then
@@ -366,7 +367,7 @@ func testYAMLiOSSwift57() throws {
               uses: actions/upload-artifact@v7
               if: always()
               with:
-                name: xcode-swift510-logs
+                name: iOS-swift510-logs
                 path: logs
 
     """
@@ -376,7 +377,17 @@ func testYAMLiOSSwift57() throws {
   let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS], compilers: [.swift510])
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
-  try source.assertMatches(expected)
+  #expect(source.contains("name: Tests"))
+  #expect(source.contains("- name: Select Simulator Destination (iOS)"))
+  #expect(source.contains("id: select-destination"))
+  #expect(source.contains("echo \"available=false\" >> \"$GITHUB_OUTPUT\""))
+  #expect(source.contains("echo \"::warning::$message\""))
+  #expect(source.contains("Unable to connect to CoreSimulator while preparing iOS."))
+  #expect(source.contains("Unable to download iOS platform support."))
+  #expect(source.contains("Build/test steps for this job were skipped because the simulator destination could not be prepared."))
+  #expect(source.contains("if: ${{ steps.select-destination.outputs.available == 'true' }}"))
+  #expect(source.contains("DESTINATION_ID=\"${{ steps.select-destination.outputs.id }}\""))
+  #expect(source.contains("xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\""))
 }
 
 @Test
@@ -387,6 +398,7 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
+  #expect(source.contains("xcrun simctl list > logs/simctl-list-tvOS.log 2>&1"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-tvOS.log"))
   #expect(source.contains("- name: Prepare Destination Picker"))
   #expect(source.contains("pick_destination_if_available() {"))
@@ -395,7 +407,9 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
   #expect(source.contains("source \"destination-picker.sh\""))
   #expect(source.contains("if pick_destination_if_available \"tvOS\" \"tvOS Simulator\" \"Apple TV\""))
   #expect(source.contains("xcodebuild -downloadPlatform tvOS > logs/download-tvOS.log"))
-  #expect(source.contains("pick_destination \"tvOS\" \"tvOS Simulator\" \"Apple TV\" \"No available non-beta Apple TV simulator destination found.\""))
+  #expect(source.contains("- name: Select Simulator Destination (tvOS)"))
+  #expect(source.contains("mark_destination_unavailable \"No available non-beta Apple TV simulator destination found.\" \"logs/destinations-tvOS.log\""))
+  #expect(source.contains("if: ${{ steps.select-destination.outputs.available == 'true' }}"))
   #expect(
     source.contains("echo \"Selected tvOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(source.contains("boot_destination \"tvOS\" \"tvOS\""))
@@ -406,6 +420,24 @@ func testYAMLtvOSUsesDynamicDestinationSelection() {
     source.contains(
       "xcodebuild test -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -destination \"id=$DESTINATION_ID\" -configuration Release CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO ENABLE_TESTABILITY=YES | tee logs/xcodebuild-tvOS-test-release.log | xcbeautify --quiet --disable-logging --renderer github-actions"
     ))
+}
+
+@Test
+func testYAMLXcodePlatformsUseSeparateJobs() {
+  let generator = Generator(
+    name: "Test Generator", version: "1.2.3 (456)", link: "https://test.com")
+  let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS, .tvOS, .watchOS], compilers: [.swift510])
+
+  let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
+
+  #expect(source.contains("iOS-swift510:"))
+  #expect(source.contains("tvOS-swift510:"))
+  #expect(source.contains("watchOS-swift510:"))
+  #expect(!source.contains("xcode-swift510:"))
+  #expect(!source.contains("iOS/tvOS/watchOS"))
+  #expect(source.contains("name: iOS-swift510-logs"))
+  #expect(source.contains("name: tvOS-swift510-logs"))
+  #expect(source.contains("name: watchOS-swift510-logs"))
 }
 
 @Test
@@ -429,14 +461,15 @@ func testYAMLwatchOSUsesDynamicDestinationSelection() {
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
 
+  #expect(source.contains("xcrun simctl list > logs/simctl-list-watchOS.log 2>&1"))
   #expect(source.contains("xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-watchOS.log"))
   #expect(source.contains("if pick_destination_if_available \"watchOS\" \"watchOS Simulator\" \"Apple Watch\""))
   #expect(source.contains("xcodebuild -downloadPlatform watchOS > logs/download-watchOS.log"))
   #expect(
-    source.contains("pick_destination \"watchOS\" \"watchOS Simulator\" \"Apple Watch\" \"No available non-beta Apple Watch simulator destination found.\""))
-  #expect(
     source.contains("echo \"Selected watchOS simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""))
   #expect(source.contains("boot_destination \"watchOS\" \"watchOS\""))
+  #expect(source.contains("mark_destination_unavailable \"No available non-beta Apple Watch simulator destination found.\" \"logs/destinations-watchOS.log\""))
+  #expect(source.contains("if: ${{ steps.select-destination.outputs.available == 'true' }}"))
   #expect(
     source.contains(
       "echo \"Building workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} (watchOS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown}).\""

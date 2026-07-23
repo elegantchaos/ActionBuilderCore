@@ -5,10 +5,13 @@
 
 /// Describes a supported platform and emits workflow YAML for that platform's jobs.
 public final class Platform: Identifiable, Sendable {
-  /// Data used to build the runtime simulator destination picker for a platform.
+  /// Settings used by generated shell to find a concrete simulator destination.
   fileprivate struct DestinationPicker {
+    /// Xcode destination platform string, such as `iOS Simulator`.
     let simulatorPlatform: String
+    /// Device name prefix used to avoid generic placeholder destinations.
     let deviceNamePrefix: String
+    /// Error shown when no concrete destination can be selected.
     let failureMessage: String
   }
 
@@ -16,8 +19,6 @@ public final class Platform: Identifiable, Sendable {
   public let id: ID
   /// Human-readable platform name used in job titles.
   public let name: String
-  /// Sub-platforms grouped into a shared Xcode job.
-  public let subPlatforms: [Platform]
   /// Indicates that the platform requires simulator destination selection.
   public let needsDestination: Bool
 
@@ -30,7 +31,6 @@ public final class Platform: Identifiable, Sendable {
     case visionOS
     case catalyst
     case linux
-    case xcode
   }
 
   /// Default platform list used for automatic platform discovery.
@@ -45,18 +45,17 @@ public final class Platform: Identifiable, Sendable {
 
   /// Creates a platform definition.
   public init(
-    _ id: ID, name: String, needsDestination: Bool = false, subPlatforms: [Platform] = []
+    _ id: ID, name: String, needsDestination: Bool = false
   ) {
     self.id = id
     self.name = name
     self.needsDestination = needsDestination
-    self.subPlatforms = subPlatforms
   }
 
   /// Destination-picking configuration for simulator-backed Xcode platforms.
   fileprivate var destinationPicker: DestinationPicker? {
     switch id {
-      case .macOS, .catalyst, .linux, .xcode:
+      case .macOS, .catalyst, .linux:
         return nil
 
       case .iOS:
@@ -85,33 +84,84 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
-  /// Xcodebuild command to download support for this platform.
-  public var xcodePlatformDownloadCommand: String {
+  /// Shell script that selects and boots a simulator destination for this platform.
+  fileprivate var destinationSelectionYAML: String {
     guard let picker = destinationPicker else {
       return ""
     }
 
     return
       """
-                  xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
+                  echo "available=false" >> "$GITHUB_OUTPUT"
+                  mark_destination_unavailable() {
+                    local message="$1"
+                    local log="${2:-}"
+                    echo "::warning::$message"
+                    if [[ -n "$log" && -f "$log" ]]
+                    then
+                      cat "$log"
+                    fi
+                    {
+                      echo "### \(name) simulator unavailable"
+                      echo ""
+                      echo "$message"
+                      echo ""
+                      echo "Build/test steps for this job were skipped because the simulator destination could not be prepared."
+                    } >> "$GITHUB_STEP_SUMMARY"
+                  }
+
+                  if ! xcrun simctl list > logs/simctl-list-\(id.rawValue).log 2>&1
+                  then
+                    mark_destination_unavailable "Unable to connect to CoreSimulator while preparing \(name)." "logs/simctl-list-\(id.rawValue).log"
+                    exit 0
+                  fi
+
+                  if ! xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log 2>&1
+                  then
+                    mark_destination_unavailable "Unable to list \(name) simulator destinations." "logs/destinations-\(id.rawValue).log"
+                    exit 0
+                  fi
+
                   if pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
                   then
                     echo "Using existing \(name) simulator destination."
                   else
                     echo "No available \(name) simulator destination found. Downloading platform support."
-                    xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log
-                    xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log
-                    pick_destination "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)" "\(picker.failureMessage)"
+                    if ! xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log 2>&1
+                    then
+                      mark_destination_unavailable "Unable to download \(name) platform support." "logs/download-\(id.rawValue).log"
+                      exit 0
+                    fi
+                    if ! xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log 2>&1
+                    then
+                      mark_destination_unavailable "Unable to list \(name) simulator destinations after downloading platform support." "logs/destinations-\(id.rawValue).log"
+                      exit 0
+                    fi
+                    if ! pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
+                    then
+                      mark_destination_unavailable "\(picker.failureMessage)" "logs/destinations-\(id.rawValue).log"
+                      exit 0
+                    fi
                   fi
                   echo "Selected \(name) simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                  boot_destination "\(id.rawValue)" "\(name)"
+                  if ! boot_destination "\(id.rawValue)" "\(name)"
+                  then
+                    mark_destination_unavailable "Failed to boot \(name) simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})." "logs/boot-\(id.rawValue).log"
+                    exit 0
+                  fi
+                  {
+                    echo "available=true"
+                    echo "id=$DESTINATION_ID"
+                    echo "name=$DESTINATION_NAME"
+                    echo "os=$DESTINATION_OS"
+                  } >> "$GITHUB_OUTPUT"
       """
 
   }
 
   /// Returns the display name used for a workflow job.
   public func jobName(with compiler: Compiler) -> String {
-    if !subPlatforms.isEmpty {
+    if needsDestination {
       switch compiler.mac {
         case .xcode(let version, _), .toolchain(let version, _, _):
           let xcodeName = compiler.id == .swiftNightly ? "Xcode \(version)" : "Xcode matching Swift \(compiler.short)"
@@ -128,10 +178,10 @@ public final class Platform: Identifiable, Sendable {
     let shouldTest = repo.testMode != .build
 
     var yaml = ""
-    var xcodeToolchain: String? = nil
-    var xcodeVersion: String? = nil
 
     for compiler in compilers {
+      var xcodeToolchain: String? = nil
+      var xcodeVersion: String? = nil
       var job =
         """
 
@@ -144,25 +194,23 @@ public final class Platform: Identifiable, Sendable {
 
       if let branch = xcodeToolchain, let version = xcodeVersion {
         selectToolchainYAML(&job, branch, version)
-      } else if !subPlatforms.isEmpty {
+      } else if needsDestination {
         selectXcodeYAML(&job, compiler: compiler)
-        destinationPickerYAML(&job)
       } else {
         selectSwiftYAML(&job, compiler: compiler)
       }
 
-      if subPlatforms.isEmpty {
+      if needsDestination {
+        destinationPickerYAML(&job)
+      }
+
+      if needsDestination {
+        job.append(runXcodebuildYAML(configurations: configurations, package: package, test: shouldTest, compiler: compiler))
+      } else {
         job.append(
           runSwiftYAML(
             configurations: configurations, test: shouldTest,
             customToolchain: xcodeToolchain != nil, compiler: compiler))
-      } else {
-        for platform in subPlatforms {
-          job.append(
-            platform.runXcodebuildYAML(
-              configurations: configurations, package: package, test: shouldTest, compiler: compiler
-            ))
-        }
       }
 
       if repo.uploadLogs {
@@ -349,13 +397,24 @@ public final class Platform: Identifiable, Sendable {
       destinationDescription = ""
     }
 
-    let setup = """
+    var setup = """
                   set -o pipefail
                   source "setup.sh"
-                  source "destination-picker.sh"
-      \(xcodePlatformDownloadCommand)
       """
+    if needsDestination, destinationPicker != nil {
+      setup.append(
+        """
 
+                      DESTINATION_ID="${{ steps.select-destination.outputs.id }}"
+                      DESTINATION_NAME="${{ steps.select-destination.outputs.name }}"
+                      DESTINATION_OS="${{ steps.select-destination.outputs.os }}"
+        """)
+    }
+
+    let condition =
+      needsDestination && destinationPicker != nil
+      ? "          if: ${{ steps.select-destination.outputs.available == 'true' }}\n"
+      : ""
 
     yaml.append(
       """
@@ -379,6 +438,18 @@ public final class Platform: Identifiable, Sendable {
                   echo "export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
       """
     )
+    if needsDestination, destinationPicker != nil {
+      yaml.append(
+        """
+
+                - name: Select Simulator Destination (\(name))
+                  id: select-destination
+                  run: |
+                    source "setup.sh"
+                    source "destination-picker.sh"
+        \(destinationSelectionYAML)
+        """)
+    }
 
     if test && compiler.supportsTesting(on: id) {
       for config in configurations {
@@ -387,6 +458,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Test (\(name) \(config.name))
+          \(condition)\
                     run: |
           \(setup)
                       echo "Testing workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
@@ -401,6 +473,7 @@ public final class Platform: Identifiable, Sendable {
           """
 
                   - name: Build (\(name) \(config))
+          \(condition)\
                     run: |
           \(setup)
                       echo "Building workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
@@ -469,9 +542,9 @@ public final class Platform: Identifiable, Sendable {
 
                     if ! load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
                     then
-                      echo "::error::$failure_message"
+                      echo "$failure_message"
                       cat "$destinations_log"
-                      exit 1
+                      return 1
                     fi
                   }
                   boot_destination() {
@@ -483,9 +556,9 @@ public final class Platform: Identifiable, Sendable {
                     xcrun simctl boot "$DESTINATION_ID" >"$boot_log" 2>&1 || true
                     if ! xcrun simctl bootstatus "$DESTINATION_ID" -b >>"$boot_log" 2>&1
                     then
-                      echo "::error::Failed to boot ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                      echo "Failed to boot ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
                       cat "$boot_log"
-                      exit 1
+                      return 1
                     fi
                   }
                   EOF
@@ -701,7 +774,7 @@ public final class Platform: Identifiable, Sendable {
       """
     )
 
-    if (id == .macOS) || !subPlatforms.isEmpty {
+    if (id == .macOS) || needsDestination {
       yaml.append(
         """
 

@@ -41,20 +41,9 @@ public class Generator {
 
       """
 
-    var xcodePlatforms: [Platform] = []
     let configurations = repo.enabledConfigs
     for platform in platforms {
-      if platform.needsDestination {
-        xcodePlatforms.append(platform)
-      } else {
-        source.append(platform.yaml(repo: repo, compilers: compilers, configurations: configurations))
-      }
-    }
-
-    if xcodePlatforms.count > 0 {
-      let name = xcodePlatforms.map({ $0.name }).joined(separator: "/")
-      let xcodePlatform = Platform(.xcode, name: name, subPlatforms: xcodePlatforms)
-      source.append(xcodePlatform.yaml(repo: repo, compilers: compilers, configurations: configurations))
+      source.append(platform.yaml(repo: repo, compilers: compilers, configurations: configurations))
     }
 
     return source
