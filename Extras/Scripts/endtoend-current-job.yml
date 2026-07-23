@@ -1,0 +1,27 @@
+  generated-workflows-current:
+    name: Generated workflows are current
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Regenerate EndToEnd workflows
+        run: Extras/Scripts/refresh-endtoend.sh
+      - name: Verify generated workflows are current
+        run: |
+          CHANGES=$(git status --short -- \
+            .github/workflows/EndToEndTests.yml \
+            .github/workflows/EndToEndSwiftJob.yml \
+            .github/workflows/EndToEndXcodeJob.yml \
+            Tests/EndToEndTests/.github/workflows)
+          if [[ -n "$CHANGES" ]]
+          then
+            echo "::error::Generated EndToEnd workflows are out of date."
+            echo "$CHANGES"
+            git diff -- \
+              .github/workflows/EndToEndTests.yml \
+              .github/workflows/EndToEndSwiftJob.yml \
+              .github/workflows/EndToEndXcodeJob.yml \
+              Tests/EndToEndTests/.github/workflows
+            echo "Run Extras/Scripts/refresh-endtoend.sh and commit the result."
+            exit 1
+          fi
