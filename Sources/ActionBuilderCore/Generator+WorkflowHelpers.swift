@@ -40,18 +40,13 @@ extension Generator {
               operation:
                 required: true
                 type: string
+              operation-name:
+                required: true
+                type: string
               separate-test-methods:
                 required: false
                 type: boolean
                 default: true
-              upload-logs:
-                required: false
-                type: boolean
-                default: true
-              post-slack:
-                required: false
-                type: boolean
-                default: false
               notification-job-name:
                 required: false
                 type: string
@@ -61,14 +56,16 @@ extension Generator {
                 required: false
 
         jobs:
-          build:
+          run:
             runs-on: ${{ inputs.runner }}
             steps:
         """
 
     source.append(commonJobStepsYAML(xcbeautifyCondition: "inputs.platform == 'macOS'"))
-    source.append(swiftSelectionStepsYAML())
-    source.append(toolchainSetupStepsYAML())
+    source.append(swiftSelectionStepsYAML(for: repo))
+    if repo.platforms.contains(.macOS), hasToolchainCompiler(in: repo) {
+      source.append(toolchainSetupStepsYAML())
+    }
     source.append(
       """
 
@@ -78,10 +75,10 @@ extension Generator {
     )
 
     for configuration in repo.enabledConfigs {
-      source.append(swiftBuildStepsYAML(configuration: configuration))
+      source.append(swiftBuildStepsYAML(configuration: configuration, repo: repo))
     }
 
-    source.append(finalJobStepsYAML())
+    source.append(finalJobStepsYAML(for: repo))
     return source + "\n"
   }
 
@@ -128,14 +125,6 @@ extension Generator {
               operation:
                 required: true
                 type: string
-              upload-logs:
-                required: false
-                type: boolean
-                default: true
-              post-slack:
-                required: false
-                type: boolean
-                default: false
               notification-job-name:
                 required: false
                 type: string
@@ -145,21 +134,25 @@ extension Generator {
                 required: false
 
         jobs:
-          build:
+          run:
             runs-on: ${{ inputs.runner }}
             steps:
         """
 
     source.append(commonJobStepsYAML())
-    source.append(xcodeSelectionStepsYAML())
-    source.append(toolchainSetupStepsYAML())
+    if hasXcodeCompiler(in: repo) {
+      source.append(xcodeSelectionStepsYAML())
+    }
+    if hasToolchainCompiler(in: repo) {
+      source.append(toolchainSetupStepsYAML())
+    }
     source.append(destinationSelectionStepsYAML())
 
     for configuration in repo.enabledConfigs {
       source.append(xcodeBuildStepsYAML(configuration: configuration))
     }
 
-    source.append(finalJobStepsYAML())
+    source.append(finalJobStepsYAML(for: repo))
     return source + "\n"
   }
 }
@@ -167,15 +160,17 @@ extension Generator {
 extension Generator {
   /// Generates checkout, diagnostics, and optional xcbeautify installation steps.
   fileprivate func commonJobStepsYAML(xcbeautifyCondition: String? = nil) -> String {
-    let condition =
-      xcbeautifyCondition.map { "\n          if: ${{ \($0) }}" } ?? ""
+    let installXCBeautify =
+      xcbeautifyCondition.map { "${{ \($0) }}" } ?? "true"
 
     return
       """
 
               - name: Checkout
                 uses: actions/checkout@v6
-              - name: Make Logs Directory
+              - name: Prepare Job
+                env:
+                  INSTALL_XCBEAUTIFY: \(installXCBeautify)
                 run: |
                   LOGS_DIR="${GITHUB_WORKSPACE:-$PWD}/logs"
                   mkdir -p "$LOGS_DIR"
@@ -192,9 +187,11 @@ extension Generator {
                     echo "ref=${GITHUB_REF:-unknown}"
                     echo "sha=${GITHUB_SHA:-unknown}"
                   } > "$LOGS_DIR/run.log"
-              - name: Install xcbeautify\(condition)
-                run: |
-                  if command -v xcbeautify >/dev/null 2>&1
+
+                  if [[ "$INSTALL_XCBEAUTIFY" != "true" ]]
+                  then
+                    echo "xcbeautify is not required for this job."
+                  elif command -v xcbeautify >/dev/null 2>&1
                   then
                     echo "xcbeautify already installed."
                   elif brew install xcbeautify > logs/install-xcbeautify.log 2>&1
@@ -208,35 +205,57 @@ extension Generator {
       """
   }
 
-  /// Generates Swift setup action steps for release and development toolchains.
-  fileprivate func swiftSelectionStepsYAML() -> String {
-    """
+  /// Generates only the Swift setup steps reachable by this repository's jobs.
+  fileprivate func swiftSelectionStepsYAML(for repo: Repo) -> String {
+    let compilers = repo.compilersToTest
+    let hasReleasedCompiler = compilers.contains {
+      $0.id != .swiftNightly && $0.isSnapshot == false
+    }
+    var yaml = ""
 
-            - name: Select Swift on Linux
-              if: ${{ inputs.setup-mode == 'release' && inputs.platform == 'linux' }}
-              uses: elegantchaos/setup-swift@allow-patch
-              with:
-                swift-version: ${{ inputs.swift-version }}
-                skip-verify-signature: true
-                allow-patch: true
-            - name: Select Swift
-              if: ${{ inputs.setup-mode == 'release' && inputs.platform != 'linux' }}
-              uses: elegantchaos/setup-swift@allow-patch
-              with:
-                swift-version: ${{ inputs.swift-version }}
-                allow-patch: true
-            - name: Select Swift Development Snapshot
-              if: ${{ inputs.setup-mode == 'development' }}
-              uses: SwiftyLab/setup-swift@v1
-              with:
-                development: true
-            - name: Select Swift Snapshot
-              if: ${{ inputs.setup-mode == 'snapshot' }}
-              uses: SwiftyLab/setup-swift@v1
-              with:
-                development: true
-                swift-version: ${{ inputs.swift-version }}
-    """
+    if repo.platforms.isDisjoint(with: [.linux, .macOS]) == false, hasReleasedCompiler {
+      yaml.append(
+        """
+
+                - name: Select Swift
+                  if: ${{ inputs.setup-mode == 'release' }}
+                  uses: elegantchaos/setup-swift@allow-patch
+                  with:
+                    swift-version: ${{ inputs.swift-version }}
+                    skip-verify-signature: ${{ inputs.platform == 'linux' }}
+                    allow-patch: true
+        """
+      )
+    }
+
+    if repo.platforms.contains(.linux), compilers.contains(where: { $0.id == .swiftNightly }) {
+      yaml.append(
+        """
+
+                - name: Select Swift Development Snapshot
+                  if: ${{ inputs.setup-mode == 'development' }}
+                  uses: SwiftyLab/setup-swift@v1
+                  with:
+                    development: true
+        """
+      )
+    }
+
+    if repo.platforms.contains(.linux), compilers.contains(where: \.isSnapshot) {
+      yaml.append(
+        """
+
+                - name: Select Swift Snapshot
+                  if: ${{ inputs.setup-mode == 'snapshot' }}
+                  uses: SwiftyLab/setup-swift@v1
+                  with:
+                    development: true
+                    swift-version: ${{ inputs.swift-version }}
+        """
+      )
+    }
+
+    return yaml
   }
 
   /// Generates Xcode resolution and selection steps for release compilers.
@@ -334,42 +353,115 @@ extension Generator {
     """
   }
 
+  /// Returns whether any selected compiler uses an Xcode-bundled Swift release.
+  fileprivate func hasXcodeCompiler(in repo: Repo) -> Bool {
+    repo.compilersToTest.contains {
+      if case .xcode = $0.mac {
+        return true
+      }
+      return false
+    }
+  }
+
+  /// Returns whether any selected compiler installs a separate Xcode toolchain.
+  fileprivate func hasToolchainCompiler(in repo: Repo) -> Bool {
+    repo.compilersToTest.contains {
+      if case .toolchain = $0.mac {
+        return true
+      }
+      return false
+    }
+  }
+
   /// Generates Swift build and test steps for one configuration.
-  fileprivate func swiftBuildStepsYAML(configuration: Configuration) -> String {
+  fileprivate func swiftBuildStepsYAML(configuration: Configuration, repo: Repo) -> String {
     let rawConfiguration = configuration.rawValue
-    return [
-      loggedSwiftCommandStepYAML(
-        name: "Build (\(rawConfiguration))",
-        command: "swift build --configuration \(rawConfiguration) --quiet",
-        logName: "swift-build-\(rawConfiguration).log",
-        successMessage: "Build (\(rawConfiguration)) succeeded.",
-        failureMessage: "Build (\(rawConfiguration)) failed."
-      ),
-      loggedSwiftCommandStepYAML(
-        name: "Test (\(rawConfiguration) XCTest)",
-        condition: "inputs.operation == 'test' && inputs.separate-test-methods",
-        command: "swift test --disable-swift-testing --configuration \(rawConfiguration)",
-        logName: "swift-test-xctest-\(rawConfiguration).log",
-        successMessage: "Test (\(rawConfiguration) XCTest) succeeded.",
-        failureMessage: "Test (\(rawConfiguration) XCTest) failed."
-      ),
-      loggedSwiftCommandStepYAML(
-        name: "Test (\(rawConfiguration) Swift Testing)",
-        condition: "inputs.operation == 'test' && inputs.separate-test-methods",
-        command: "swift test --disable-xctest --configuration \(rawConfiguration)",
-        logName: "swift-test-swift-testing-\(rawConfiguration).log",
-        successMessage: "Test (\(rawConfiguration) Swift Testing) succeeded.",
-        failureMessage: "Test (\(rawConfiguration) Swift Testing) failed."
-      ),
-      loggedSwiftCommandStepYAML(
-        name: "Test (\(rawConfiguration))",
-        condition: "inputs.operation == 'test' && !inputs.separate-test-methods",
-        command: "swift test --configuration \(rawConfiguration)",
-        logName: "swift-test-\(rawConfiguration).log",
-        successMessage: "Test (\(rawConfiguration)) succeeded.",
-        failureMessage: "Test (\(rawConfiguration)) failed."
-      ),
-    ].joined()
+    var yaml = loggedSwiftCommandStepYAML(
+      name: "Build (\(rawConfiguration))",
+      command: "swift build --configuration \(rawConfiguration) --quiet",
+      logName: "swift-build-\(rawConfiguration).log",
+      successMessage: "Build (\(rawConfiguration)) succeeded.",
+      failureMessage: "Build (\(rawConfiguration)) failed."
+    )
+
+    switch repo.swiftTestPlan {
+      case .none:
+        break
+
+      case .combined:
+        yaml.append(combinedSwiftTestStepYAML(configuration: rawConfiguration))
+
+      case .filtered:
+        yaml.append(
+          filteredSwiftTestStepsYAML(
+            configuration: rawConfiguration,
+            frameworks: repo.testFrameworks
+          ))
+
+      case .compilerDependent:
+        yaml.append(
+          filteredSwiftTestStepsYAML(
+            configuration: rawConfiguration,
+            frameworks: repo.testFrameworks,
+            condition: "inputs.operation == 'test' && inputs.separate-test-methods"
+          ))
+        yaml.append(
+          combinedSwiftTestStepYAML(
+            configuration: rawConfiguration,
+            condition: "inputs.operation == 'test' && !inputs.separate-test-methods"
+          ))
+    }
+
+    return yaml
+  }
+
+  /// Generates framework-specific test steps in a stable order.
+  fileprivate func filteredSwiftTestStepsYAML(
+    configuration: String,
+    frameworks: Set<TestFramework>,
+    condition: String = "inputs.operation == 'test'"
+  ) -> String {
+    TestFramework.allCases
+      .filter { frameworks.contains($0) }
+      .map { framework in
+        switch framework {
+          case .xctest:
+            loggedSwiftCommandStepYAML(
+              name: "Test (\(configuration) XCTest)",
+              condition: condition,
+              command: "swift test --disable-swift-testing --configuration \(configuration)",
+              logName: "swift-test-xctest-\(configuration).log",
+              successMessage: "Test (\(configuration) XCTest) succeeded.",
+              failureMessage: "Test (\(configuration) XCTest) failed."
+            )
+
+          case .swiftTesting:
+            loggedSwiftCommandStepYAML(
+              name: "Test (\(configuration) Swift Testing)",
+              condition: condition,
+              command: "swift test --disable-xctest --configuration \(configuration)",
+              logName: "swift-test-swift-testing-\(configuration).log",
+              successMessage: "Test (\(configuration) Swift Testing) succeeded.",
+              failureMessage: "Test (\(configuration) Swift Testing) failed."
+            )
+        }
+      }
+      .joined()
+  }
+
+  /// Generates a test step for compilers that cannot select a framework.
+  fileprivate func combinedSwiftTestStepYAML(
+    configuration: String,
+    condition: String = "inputs.operation == 'test'"
+  ) -> String {
+    loggedSwiftCommandStepYAML(
+      name: "Test (\(configuration))",
+      condition: condition,
+      command: "swift test --configuration \(configuration)",
+      logName: "swift-test-\(configuration).log",
+      successMessage: "Test (\(configuration)) succeeded.",
+      failureMessage: "Test (\(configuration)) failed."
+    )
   }
 
   /// Generates one Swift command step with consistent logging and diagnostics.
@@ -565,81 +657,72 @@ extension Generator {
     """
   }
 
-  /// Generates Xcode build and test steps for one configuration.
+  /// Generates one Xcode operation step for a build configuration.
   fileprivate func xcodeBuildStepsYAML(configuration: Configuration) -> String {
     let rawConfiguration = configuration.rawValue
     let xcodeConfiguration = configuration.xcodeID
     let extraArguments = configuration == .release ? " ENABLE_TESTABILITY=YES" : ""
 
-    return [
-      xcodeCommandStepYAML(
-        operation: "test",
-        displayName: "Test",
-        progressVerb: "Testing",
-        command: "xcodebuild test",
-        configurationName: configuration.name,
-        xcodeConfiguration: xcodeConfiguration,
-        rawConfiguration: rawConfiguration,
-        extraArguments: extraArguments
-      ),
-      xcodeCommandStepYAML(
-        operation: "build",
-        displayName: "Build",
-        progressVerb: "Building",
-        command: "xcodebuild clean build",
-        configurationName: configuration.name,
-        xcodeConfiguration: xcodeConfiguration,
-        rawConfiguration: rawConfiguration,
-        extraArguments: extraArguments
-      ),
-    ].joined()
-  }
+    return
+      """
 
-  /// Generates one simulator-backed Xcode command step.
-  fileprivate func xcodeCommandStepYAML(
-    operation: String,
-    displayName: String,
-    progressVerb: String,
-    command: String,
-    configurationName: String,
-    xcodeConfiguration: String,
-    rawConfiguration: String,
-    extraArguments: String
-  ) -> String {
-    """
-
-            - name: \(displayName) (${{ inputs.platform }} \(configurationName))
-              if: ${{ inputs.operation == '\(operation)' && steps.select-destination.outputs.available == 'true' }}
-              env:
-                DESTINATION_ID: ${{ steps.select-destination.outputs.id }}
-                DESTINATION_NAME: ${{ steps.select-destination.outputs.name }}
-                DESTINATION_OS: ${{ steps.select-destination.outputs.os }}
-                PLATFORM: ${{ inputs.platform }}
-              run: |
-                set -o pipefail
-                echo "\(progressVerb) workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} ($PLATFORM ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                \(command) -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration \(xcodeConfiguration) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO\(extraArguments) | tee "logs/xcodebuild-$PLATFORM-\(operation)-\(rawConfiguration).log" | xcbeautify --quiet --disable-logging --renderer github-actions
-    """
+              - name: ${{ inputs.operation-name }} (${{ inputs.platform }} \(configuration.name))
+                if: ${{ steps.select-destination.outputs.available == 'true' }}
+                env:
+                  DESTINATION_ID: ${{ steps.select-destination.outputs.id }}
+                  DESTINATION_NAME: ${{ steps.select-destination.outputs.name }}
+                  DESTINATION_OS: ${{ steps.select-destination.outputs.os }}
+                  OPERATION: ${{ inputs.operation }}
+                  PLATFORM: ${{ inputs.platform }}
+                run: |
+                  set -o pipefail
+                  if [[ "$OPERATION" == "test" ]]
+                  then
+                    ACTION=(test)
+                    VERB="Testing"
+                  else
+                    ACTION=(clean build)
+                    VERB="Building"
+                  fi
+                  echo "$VERB workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} ($PLATFORM ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
+                  xcodebuild "${ACTION[@]}" -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration \(xcodeConfiguration) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO\(extraArguments) | tee "logs/xcodebuild-$PLATFORM-$OPERATION-\(rawConfiguration).log" | xcbeautify --quiet --disable-logging --renderer github-actions
+      """
   }
 
   /// Generates artifact upload and optional Slack notification steps.
-  fileprivate func finalJobStepsYAML() -> String {
-    """
+  fileprivate func finalJobStepsYAML(for repo: Repo) -> String {
+    var yaml = ""
 
-            - name: Upload Logs
-              if: ${{ always() && inputs.upload-logs }}
-              uses: actions/upload-artifact@v7
-              with:
-                name: ${{ inputs.platform }}-${{ inputs.compiler-id }}-logs
-                path: logs
-            - name: Slack Notification
-              if: ${{ always() && inputs.post-slack }}
-              uses: elegantchaos/slatify@master
-              with:
-                type: ${{ job.status }}
-                job_name: ${{ inputs.notification-job-name }}
-                mention_if: failure
-                url: ${{ secrets.SLACK_WEBHOOK }}
-    """
+    if repo.uploadLogs {
+      yaml.append(
+        """
+
+                - name: Upload Logs
+                  if: ${{ always() }}
+                  uses: actions/upload-artifact@v7
+                  with:
+                    name: ${{ inputs.platform }}-${{ inputs.compiler-id }}-logs
+                    path: logs
+        """
+      )
+    }
+
+    if repo.postSlackNotification {
+      yaml.append(
+        """
+
+                - name: Slack Notification
+                  if: ${{ always() }}
+                  uses: elegantchaos/slatify@master
+                  with:
+                    type: ${{ job.status }}
+                    job_name: ${{ inputs.notification-job-name }}
+                    mention_if: failure
+                    url: ${{ secrets.SLACK_WEBHOOK }}
+        """
+      )
+    }
+
+    return yaml
   }
 }

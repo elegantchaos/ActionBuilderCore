@@ -91,6 +91,14 @@ extension Platform {
 
     /// Compile and run tests.
     case test
+
+    /// Human-readable operation used in generated step names.
+    var name: String {
+      switch self {
+        case .build: "Build"
+        case .test: "Test"
+      }
+    }
   }
 
   /// Toolchain setup strategy selected for a reusable workflow invocation.
@@ -141,9 +149,8 @@ extension Platform {
               compiler-id: \(YAML.quoted(compiler.id.rawValue))
               preferred-xcode-version: \(YAML.quoted(preferredXcodeVersion(for: compiler)))
               setup-mode: \(YAML.quoted(xcodeSetupMode(for: compiler).rawValue))
-              xcode-version: \(YAML.quoted(xcodeVersion(for: compiler)))
-              toolchain-branch: \(YAML.quoted(toolchainBranch(for: compiler)))
               operation: \(YAML.quoted(operation.rawValue))
+              operation-name: \(YAML.quoted(operation.name))
         """
       )
     } else {
@@ -155,27 +162,35 @@ extension Platform {
               swift-version: \(YAML.quoted(compiler.short))
               compiler-id: \(YAML.quoted(compiler.id.rawValue))
               setup-mode: \(YAML.quoted(swiftSetupMode(for: compiler).rawValue))
+              operation: \(YAML.quoted(operation.rawValue))
+        """
+      )
+    }
+
+    if case .toolchain = compiler.mac {
+      yaml.append(
+        """
+
               xcode-version: \(YAML.quoted(xcodeVersion(for: compiler)))
               toolchain-branch: \(YAML.quoted(toolchainBranch(for: compiler)))
-              operation: \(YAML.quoted(operation.rawValue))
+        """
+      )
+    }
+
+    if needsDestination == false, repo.swiftTestPlan == .compilerDependent {
+      yaml.append(
+        """
+
               separate-test-methods: \(compiler.supportsSeparateTestMethods)
         """
       )
     }
 
-    yaml.append(
-      """
-
-            upload-logs: \(repo.uploadLogs)
-            post-slack: \(repo.postSlackNotification)
-            notification-job-name: \(YAML.quoted(notificationName))
-      """
-    )
-
     if repo.postSlackNotification {
       yaml.append(
         """
 
+            notification-job-name: \(YAML.quoted(notificationName))
           secrets: inherit
         """
       )

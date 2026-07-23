@@ -6,18 +6,28 @@
 import Foundation
 import Runner
 
-/// Some minimal Swift Package Manager package information.
-struct PackageInfo: Codable {
-  /// Package name from `dump-package`.
-  let name: String
+/// Minimal package information decoded from `swift package describe`.
+struct PackageInfo: Decodable {
   /// Swift tools version declared in the package manifest.
-  let toolsVersion: ToolsVersion
+  let toolsVersion: String
+
   /// Platforms declared in the package manifest.
   let platforms: [PlatformInfo]
+
   /// Targets declared in the package manifest.
   let targets: [TargetInfo]
 
-  /// Reads and decodes `swift package dump-package` output.
+  /// Test frameworks imported by the package's test sources.
+  var testFrameworks: Set<TestFramework> = []
+
+  /// Maps the JSON field names emitted by Swift Package Manager.
+  private enum CodingKeys: String, CodingKey {
+    case toolsVersion = "tools_version"
+    case platforms
+    case targets
+  }
+
+  /// Reads package metadata and detects test-framework imports.
   init(from url: URL, useIsolatedScratchPath: Bool = false) async throws {
     let scratchPath: URL?
     if useIsolatedScratchPath {
@@ -25,7 +35,8 @@ struct PackageInfo: Codable {
       // Using a unique scratch path for the inner invocation avoids that deadlock.
       // In plugin mode this must live inside the package directory, because command
       // plugins are only allowed to write there.
-      let path = url
+      let path =
+        url
         .appendingPathComponent(".build", isDirectory: true)
         .appendingPathComponent("actionbuildercore-swiftpm-\(UUID().uuidString)", isDirectory: true)
       try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
@@ -40,11 +51,15 @@ struct PackageInfo: Codable {
     }
 
     let spm = Runner(command: "swift", cwd: url)
-    let arguments = if let scratchPath {
-      ["package", "--disable-sandbox", "--scratch-path", scratchPath.path, "dump-package"]
-    } else {
-      ["package", "--disable-sandbox", "dump-package"]
-    }
+    let arguments =
+      if let scratchPath {
+        [
+          "package", "--disable-sandbox", "--scratch-path", scratchPath.path, "describe", "--type",
+          "json",
+        ]
+      } else {
+        ["package", "--disable-sandbox", "describe", "--type", "json"]
+      }
     let output = spm.run(arguments)
     try await output.throwIfFailed(
       Error.launchingSwiftFailed(url, await output.stderr.string)
@@ -52,22 +67,19 @@ struct PackageInfo: Codable {
 
     let jsonData = await output.stdout.data
     let decoder = JSONDecoder()
-    self = try decoder.decode(PackageInfo.self, from: jsonData)
+    var package = try decoder.decode(PackageInfo.self, from: jsonData)
+    package.testFrameworks = package.detectTestFrameworks(at: url)
+    self = package
   }
 
   /// Returns `true` when at least one target is a test target.
   var hasTestTargets: Bool {
-    targets.contains(where: { $0.type == .test })
+    targets.contains(where: \.isTest)
   }
 
-  /// Minimal tools version wrapper from `dump-package`.
-  struct ToolsVersion: Codable {
-    let _version: String
-  }
-
-  /// Minimal platform information from `dump-package`.
-  struct PlatformInfo: Codable {
-    let platformName: String
+  /// Minimal platform information from `swift package describe`.
+  struct PlatformInfo: Decodable {
+    let name: String
     let version: String
   }
 
@@ -77,4 +89,21 @@ struct PackageInfo: Codable {
     case corruptData(String)
   }
 
+  /// Detects framework imports in the source files belonging to test targets.
+  private func detectTestFrameworks(at packageURL: URL) -> Set<TestFramework> {
+    var frameworks: Set<TestFramework> = []
+
+    for target in targets where target.isTest {
+      let targetURL = packageURL.appending(path: target.path)
+      for sourcePath in target.sources {
+        let sourceURL = targetURL.appending(path: sourcePath)
+        guard let source = try? String(contentsOf: sourceURL, encoding: .utf8) else {
+          continue
+        }
+        frameworks.formUnion(TestFramework.detected(in: source))
+      }
+    }
+
+    return frameworks
+  }
 }

@@ -5,26 +5,39 @@
 
 import Foundation
 
-/// Target kind values returned by `swift package dump-package`.
-enum TargetType: String, Codable {
-    /// A regular library target.
-    case regular
-    /// An executable target.
-    case executable
-    /// A test target.
-    case test
-    /// A system-library target.
-    case system
-    /// A binary target.
-    case binary
-    /// A plugin target.
-    case plugin
-}
+/// Minimal target information decoded from `swift package describe`.
+struct TargetInfo: Decodable {
+  /// Target name.
+  let name: String
 
-/// Minimal target information decoded from package metadata.
-struct TargetInfo: Codable {
-    /// Target name.
-    let name: String
-    /// Target kind.
-    let type: TargetType
+  /// Repository-relative target source directory.
+  let path: String
+
+  /// Source paths relative to the target directory.
+  let sources: [String]
+
+  /// Target kind, such as `library` or `test`.
+  let type: String
+
+  /// Indicates whether this is a test target.
+  var isTest: Bool {
+    type == "test"
+  }
+
+  /// Maps the package-description fields used for source inspection.
+  private enum CodingKeys: String, CodingKey {
+    case name
+    case path
+    case sources
+    case type
+  }
+
+  /// Decodes targets whose non-source kinds may omit paths or source lists.
+  init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.name = try container.decode(String.self, forKey: .name)
+    self.path = try container.decodeIfPresent(String.self, forKey: .path) ?? ""
+    self.sources = try container.decodeIfPresent([String].self, forKey: .sources) ?? []
+    self.type = try container.decode(String.self, forKey: .type)
+  }
 }

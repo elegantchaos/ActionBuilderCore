@@ -100,13 +100,7 @@ struct GeneratorTests {
             swift-version: "5.10"
             compiler-id: "swift510"
             setup-mode: "release"
-            xcode-version: "15.4"
-            toolchain-branch: ""
             operation: "test"
-            separate-test-methods: false
-            upload-logs: true
-            post-slack: false
-            notification-job-name: "macOS (Swift 5.10)"
       """
 
     #expect(generator.workflow(for: repo) == expected + "\n")
@@ -139,53 +133,143 @@ struct GeneratorTests {
       name: "testRepo",
       owner: "testOwner",
       platforms: [.linux, .macOS],
-      compilers: [.swift510]
+      compilers: [.swift62],
+      testFrameworks: [.xctest, .swiftTesting]
     )
     let workflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
 
     #expect(workflow.contains("workflow_call:"))
     #expect(workflow.contains("runs-on: ${{ inputs.runner }}"))
+    #expect(workflow.contains("if: ${{ inputs.setup-mode == 'release' }}"))
+    #expect(workflow.contains("skip-verify-signature: ${{ inputs.platform == 'linux' }}"))
+    #expect(workflow.contains("Select Swift on Linux") == false)
+    #expect(workflow.contains("INSTALL_XCBEAUTIFY: ${{ inputs.platform == 'macOS' }}"))
+    #expect(workflow.contains("- name: Install xcbeautify") == false)
     #expect(
       workflow.contains(
-        "if: ${{ inputs.setup-mode == 'release' && inputs.platform == 'linux' }}"))
-    #expect(workflow.contains("skip-verify-signature: true"))
-    #expect(workflow.contains("if: ${{ inputs.platform == 'macOS' }}"))
+        """
+                - name: Select Swift
+                  if: ${{ inputs.setup-mode == 'release' }}
+        """))
     #expect(workflow.contains("swift build --configuration release --quiet"))
     #expect(
       workflow.contains(
         """
         - name: Test (release XCTest)
-                  if: ${{ inputs.operation == 'test' && inputs.separate-test-methods }}
+                  if: ${{ inputs.operation == 'test' }}
         """))
     #expect(workflow.contains("swift test --disable-swift-testing --configuration release"))
     #expect(workflow.contains("swift test --disable-xctest --configuration release"))
     #expect(workflow.contains("name: ${{ inputs.platform }}-${{ inputs.compiler-id }}-logs"))
   }
 
-  /// Swift 5.10 uses one combined test command rather than separate test runners.
+  /// A Swift Testing-only package emits only its relevant modern test command.
   @Test
-  func callerDisablesSeparateTestsForSwift510() throws {
+  func swiftTestingPackageEmitsOnlySwiftTestingStep() throws {
     let repo = Repo(
       name: "testRepo",
       owner: "testOwner",
       platforms: [.linux],
-      compilers: [.swift510]
+      compilers: [.swift62],
+      testFrameworks: [.swiftTesting]
     )
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
 
-    #expect(try workflow(named: "Tests.yml", for: repo).contains("separate-test-methods: false"))
+    #expect(helper.contains("- name: Test (release Swift Testing)"))
+    #expect(helper.contains("- name: Test (release XCTest)") == false)
+    #expect(helper.contains("- name: Test (release)\n") == false)
+    #expect(helper.contains("jobs:\n  run:"))
+    #expect(helper.contains("Select Swift Development Snapshot") == false)
+    #expect(helper.contains("Select Swift Snapshot") == false)
+    #expect(helper.contains("Install Swift Snapshot Toolchain") == false)
+    #expect(helper.contains("Slack Notification") == false)
   }
 
-  /// Later Swift versions enable separate XCTest and Swift Testing commands.
+  /// An XCTest-only package emits only its relevant modern test command.
   @Test
-  func callerEnablesSeparateTestsForModernSwift() throws {
+  func xctestPackageEmitsOnlyXCTestStep() throws {
     let repo = Repo(
       name: "testRepo",
       owner: "testOwner",
       platforms: [.linux],
-      compilers: [.swift62]
+      compilers: [.swift62],
+      testFrameworks: [.xctest]
     )
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
 
-    #expect(try workflow(named: "Tests.yml", for: repo).contains("separate-test-methods: true"))
+    #expect(helper.contains("- name: Test (release XCTest)"))
+    #expect(helper.contains("- name: Test (release Swift Testing)") == false)
+    #expect(helper.contains("- name: Test (release)\n") == false)
+  }
+
+  /// Packages containing both frameworks run each framework separately on modern Swift.
+  @Test
+  func mixedTestPackageEmitsBothModernTestSteps() throws {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.linux],
+      compilers: [.swift62],
+      testFrameworks: [.xctest, .swiftTesting]
+    )
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+
+    #expect(helper.contains("- name: Test (release XCTest)"))
+    #expect(helper.contains("- name: Test (release Swift Testing)"))
+    #expect(helper.contains("- name: Test (release)\n") == false)
+  }
+
+  /// Swift 5.10 uses one combined test command because it lacks framework filters.
+  @Test
+  func olderCompilerEmitsCombinedTestStep() throws {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.linux],
+      compilers: [.swift510],
+      testFrameworks: [.swiftTesting]
+    )
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+
+    #expect(helper.contains("- name: Test (release)\n"))
+    #expect(helper.contains("- name: Test (release XCTest)") == false)
+    #expect(helper.contains("- name: Test (release Swift Testing)") == false)
+  }
+
+  /// Unrecognized test infrastructure falls back to the compatible combined command.
+  @Test
+  func unknownFrameworkPackageEmitsCombinedTestStep() throws {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.linux],
+      compilers: [.swift62],
+      testFrameworks: []
+    )
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+
+    #expect(helper.contains("- name: Test (release)\n"))
+    #expect(helper.contains("--disable-swift-testing") == false)
+    #expect(helper.contains("--disable-xctest") == false)
+  }
+
+  /// Mixed compiler capabilities select filtered or combined commands per caller.
+  @Test
+  func mixedCompilerCapabilitiesEmitCompatibleTestSteps() throws {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.linux],
+      compilers: [.swift510, .swift62],
+      testFrameworks: [.swiftTesting]
+    )
+    let caller = try workflow(named: "Tests.yml", for: repo)
+    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+
+    #expect(caller.contains("separate-test-methods: false"))
+    #expect(caller.contains("separate-test-methods: true"))
+    #expect(helper.contains("inputs.operation == 'test' && inputs.separate-test-methods"))
+    #expect(helper.contains("inputs.operation == 'test' && !inputs.separate-test-methods"))
   }
 
   /// The Xcode helper maps each supported platform to its simulator family.
@@ -205,8 +289,16 @@ struct GeneratorTests {
     #expect(workflow.contains("SIMULATOR_PLATFORM=\"watchOS Simulator\""))
     #expect(workflow.contains("SIMULATOR_PLATFORM=\"visionOS Simulator\""))
     #expect(workflow.contains("xcodebuild -downloadPlatform \"$PLATFORM\""))
-    #expect(workflow.contains("inputs.operation == 'test'"))
-    #expect(workflow.contains("inputs.operation == 'build'"))
+    #expect(workflow.contains("- name: ${{ inputs.operation-name }}"))
+    #expect(
+      workflow.contains(
+        """
+                - name: ${{ inputs.operation-name }} (${{ inputs.platform }} Release)
+                  if: ${{ steps.select-destination.outputs.available == 'true' }}
+        """))
+    #expect(workflow.contains("if [[ \"$OPERATION\" == \"test\" ]]"))
+    #expect(workflow.contains("ACTION=(test)"))
+    #expect(workflow.contains("ACTION=(clean build)"))
   }
 
   /// watchOS callers build while testable Xcode platforms run tests.
@@ -229,9 +321,8 @@ struct GeneratorTests {
               compiler-id: "swift510"
               preferred-xcode-version: "15.4"
               setup-mode: "xcode-release"
-              xcode-version: "15.4"
-              toolchain-branch: ""
               operation: "test"
+              operation-name: "Test"
         """))
     #expect(
       workflow.contains(
@@ -242,9 +333,8 @@ struct GeneratorTests {
               compiler-id: "swift510"
               preferred-xcode-version: "15.4"
               setup-mode: "xcode-release"
-              xcode-version: "15.4"
-              toolchain-branch: ""
               operation: "build"
+              operation-name: "Build"
         """))
   }
 
@@ -263,8 +353,8 @@ struct GeneratorTests {
 
     #expect(swiftWorkflow.contains("Build (debug)"))
     #expect(swiftWorkflow.contains("Build (release)"))
-    #expect(xcodeWorkflow.contains("Test (${{ inputs.platform }} Debug)"))
-    #expect(xcodeWorkflow.contains("Test (${{ inputs.platform }} Release)"))
+    #expect(xcodeWorkflow.contains("${{ inputs.operation-name }} (${{ inputs.platform }} Debug)"))
+    #expect(xcodeWorkflow.contains("${{ inputs.operation-name }} (${{ inputs.platform }} Release)"))
   }
 
   /// Slack-enabled callers inherit secrets and helpers declare the webhook.
@@ -280,8 +370,8 @@ struct GeneratorTests {
     let caller = try workflow(named: "Tests.yml", for: repo)
     let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
 
-    #expect(caller.contains("post-slack: true"))
     #expect(caller.contains("secrets: inherit"))
+    #expect(caller.contains("notification-job-name: \"Linux (Swift 6.2)\""))
     #expect(helper.contains("SLACK_WEBHOOK:"))
     #expect(helper.contains("url: ${{ secrets.SLACK_WEBHOOK }}"))
   }

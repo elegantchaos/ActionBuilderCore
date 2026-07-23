@@ -69,6 +69,7 @@ struct RepoTests {
 
     #expect(repo.compilers == [.swiftLatest])
     #expect(Set(repo.enabledCompilers.map(\.id)) == [.latestRelease])
+    #expect(repo.testFrameworks == [.swiftTesting])
   }
 
   /// Legacy compiler identifiers collapse to the earliest supported compiler.
