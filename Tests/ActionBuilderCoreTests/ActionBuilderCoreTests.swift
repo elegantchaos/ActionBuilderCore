@@ -377,7 +377,7 @@ func testYAMLiOSSwift57() throws {
   let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS], compilers: [.swift510])
 
   let source = generator.workflow(for: repo).trimmingCharacters(in: .whitespacesAndNewlines)
-  #expect(expected.contains("name: Tests"))
+  #expect(source.contains("name: Tests"))
   #expect(source.contains("- name: Select Simulator Destination (iOS)"))
   #expect(source.contains("id: select-destination"))
   #expect(source.contains("echo \"available=false\" >> \"$GITHUB_OUTPUT\""))
