@@ -1,8 +1,8 @@
 // swift-tools-version:6.2
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-//  Created by Sam Deane on 04/07/22.
-//  All code (c) 2022 - present day, Elegant Chaos Limited.
+//  Created by Sam Deane on 23/07/2026.
+//  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import PackageDescription
@@ -33,8 +33,6 @@ let package = Package(
     .package(url: "https://github.com/elegantchaos/Runner.git", from: "2.1.5"),
     .package(url: "https://github.com/elegantchaos/SemanticVersion.git", from: "1.1.2"),
     .package(url: "https://github.com/elegantchaos/Versionator.git", exact: "2.1.1"),
-    .package(url: "https://github.com/elegantchaos/ChaosTesting", from: "1.0.1"),
-    .package(url: "https://github.com/elegantchaos/Matchable", from: "1.0.7"),
   ],
 
   targets: [
@@ -50,7 +48,7 @@ let package = Package(
     .executableTarget(
       name: "ActionBuilderTool",
       dependencies: [
-        "ActionBuilderCore",
+        "ActionBuilderCore"
       ],
       plugins: [
         .plugin(name: "VersionatorPlugin", package: "Versionator")
@@ -61,9 +59,7 @@ let package = Package(
       name: "ActionBuilderCoreTests",
 
       dependencies: [
-        "ActionBuilderCore",
-        "ChaosTesting",
-        "Matchable",
+        "ActionBuilderCore"
       ],
 
       resources: [

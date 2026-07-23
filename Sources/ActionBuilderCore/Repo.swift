@@ -1,6 +1,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-//  Created by Sam Deane on 30/06/22.
-//  All code (c) 2022 - present day, Elegant Chaos Limited.
+//  Created by Sam Deane on 23/07/2026.
+//  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
@@ -122,17 +122,11 @@ public struct Repo: Equatable, Sendable {
   /// Final compiler list to run, honoring the `firstlast` setting.
   var compilersToTest: [Compiler] {
     let supportedCompilers = enabledCompilers
-    if firstlast && (supportedCompilers.count > 0) {
-      let first = supportedCompilers.first!
-      let last = supportedCompilers.last!
-      if first.id != last.id {
-        return [first, last]
-      } else {
-        return [first]
-      }
-    } else {
+    guard firstlast, let first = supportedCompilers.first, let last = supportedCompilers.last else {
       return supportedCompilers
     }
+
+    return first.id == last.id ? [first] : [first, last]
   }
 
   /// Controls whether jobs only build or also run tests.
@@ -147,18 +141,18 @@ public struct Repo: Equatable, Sendable {
     /// Initializes test mode from legacy optional boolean settings.
     init(_ shouldTest: Bool?) {
       switch shouldTest {
-      case false: self = .build
-      case true: self = .test
-      default: self = .auto
+        case false: self = .build
+        case true: self = .test
+        default: self = .auto
       }
     }
 
     /// Converts test mode to the persisted optional boolean representation.
     var asBool: Bool? {
       switch self {
-      case .test: return true
-      case .build: return false
-      case .auto: return nil
+        case .test: return true
+        case .build: return false
+        case .auto: return nil
       }
     }
   }

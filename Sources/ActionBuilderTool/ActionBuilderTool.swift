@@ -1,6 +1,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-//  Created by Sam Deane on 04/07/2022.
-//  All code (c) 2022 - present day, Sam Deane.
+//  Created by Sam Deane on 23/07/2026.
+//  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import ActionBuilderCore
@@ -47,22 +47,24 @@ import Foundation
       link: "https://github.com/elegantchaos/ActionBuilderCore"
     )
 
-    try updateWorkflow(for: repo, at: url, with: generator)
+    try updateWorkflows(for: repo, at: url, with: generator)
 
     if repo.header {
       try updateHeader(for: repo, at: url, with: generator)
     }
   }
 
-  /// Writes the generated workflow YAML into `.github/workflows/<workflow>.yml`.
-  static func updateWorkflow(for repo: Repo, at url: URL, with generator: Generator) throws {
-    let source = generator.workflow(for: repo)
-    let workflowsURL = url.appendingPathComponent(".github/workflows")
-    if !FileManager.default.fileExists(atPath: workflowsURL.path) {
-      try FileManager.default.createDirectory(at: workflowsURL, withIntermediateDirectories: true)
+  /// Writes the generated caller and reusable workflows into `.github/workflows`.
+  static func updateWorkflows(for repo: Repo, at url: URL, with generator: Generator) throws {
+    for file in generator.workflowFiles(for: repo) {
+      let fileURL = url.appending(path: file.relativePath)
+      let directoryURL = fileURL.deletingLastPathComponent()
+      try FileManager.default.createDirectory(
+        at: directoryURL,
+        withIntermediateDirectories: true
+      )
+      try file.contents.write(to: fileURL, atomically: true, encoding: .utf8)
     }
-    let sourceURL = workflowsURL.appendingPathComponent("\(repo.workflow).yml")
-    try source.data(using: .utf8)?.write(to: sourceURL)
   }
 
   /// Inserts or replaces the generated README header block.
@@ -75,8 +77,7 @@ import Foundation
       readme.removeSubrange(readme.startIndex..<range.upperBound)
     }
     readme.insert(contentsOf: header, at: readme.startIndex)
-    let data = readme.data(using: .utf8)
-    try data?.write(to: readmeURL)
+    try readme.write(to: readmeURL, atomically: true, encoding: .utf8)
   }
 
   /// Creates a default `.actionbuilder.json` file when one does not exist.
@@ -109,5 +110,4 @@ import Foundation
       NSWorkspace.shared.open(settingsURL)
     #endif
   }
-
 }

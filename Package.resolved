@@ -1,5 +1,5 @@
 {
-  "originHash" : "8f42fae892d26b9cbddc272e35d4b0b1ab7a47ef70f458e4fcd73e0093e5d293",
+  "originHash" : "51bb5edb0f6a2dab9577b99919b2202f584bf404eac0b17522cf43dba5f64fa9",
   "pins" : [
     {
       "identity" : "chaosbytestreams",
@@ -7,24 +7,6 @@
       "location" : "https://github.com/elegantchaos/ChaosByteStreams",
       "state" : {
         "revision" : "01cc58b8d9a01d67ee6669b67db41b2060ea467b",
-        "version" : "1.0.7"
-      }
-    },
-    {
-      "identity" : "chaostesting",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/elegantchaos/ChaosTesting",
-      "state" : {
-        "revision" : "a7523f7678b8a6b5b8edccb05330f32317413979",
-        "version" : "1.0.1"
-      }
-    },
-    {
-      "identity" : "matchable",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/elegantchaos/Matchable",
-      "state" : {
-        "revision" : "d53e807009960aafbd54f6229c2542f906628b38",
         "version" : "1.0.7"
       }
     },

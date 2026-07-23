@@ -1,162 +1,64 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-//  Created by Sam Deane on 19/02/20.
-//  All code (c) 2020 - present day, Elegant Chaos Limited.
+//  Created by Sam Deane on 23/07/2026.
+//  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-/// Describes a supported platform and emits workflow YAML for that platform's jobs.
+/// Describes a supported platform and emits caller jobs for that platform.
 public final class Platform: Identifiable, Sendable {
-  /// Settings used by generated shell to find a concrete simulator destination.
-  fileprivate struct DestinationPicker {
-    /// Xcode destination platform string, such as `iOS Simulator`.
-    let simulatorPlatform: String
-    /// Device name prefix used to avoid generic placeholder destinations.
-    let deviceNamePrefix: String
-    /// Error shown when no concrete destination can be selected.
-    let failureMessage: String
-  }
-
-  /// Stable platform identifier used in config and job IDs.
+  /// Stable platform identifier used in configuration and job IDs.
   public let id: ID
+
   /// Human-readable platform name used in job titles.
   public let name: String
-  /// Indicates that the platform requires simulator destination selection.
-  public let needsDestination: Bool
 
-  /// Canonical platform IDs recognized by ActionBuilder.
+  /// Indicates that the platform is built through Xcode and a simulator destination.
+  public var needsDestination: Bool {
+    switch id {
+      case .iOS, .tvOS, .watchOS, .visionOS:
+        return true
+      case .macOS, .catalyst, .linux:
+        return false
+    }
+  }
+
+  /// Canonical platform identifiers recognized by ActionBuilder.
   public enum ID: String, Codable, CaseInsensitiveRawRepresentable, Sendable {
+    /// macOS, built with Swift Package Manager.
     case macOS
+
+    /// iOS, built with Xcode against a simulator.
     case iOS
+
+    /// tvOS, built with Xcode against a simulator.
     case tvOS
+
+    /// watchOS, built with Xcode against a simulator.
     case watchOS
+
+    /// visionOS, built with Xcode against a simulator.
     case visionOS
+
+    /// Mac Catalyst.
     case catalyst
+
+    /// Linux, built with Swift Package Manager.
     case linux
   }
 
   /// Default platform list used for automatic platform discovery.
   public static let platforms = [
     Platform(.macOS, name: "macOS"),
-    Platform(.iOS, name: "iOS", needsDestination: true),
-    Platform(.tvOS, name: "tvOS", needsDestination: true),
-    Platform(.watchOS, name: "watchOS", needsDestination: true),
-    Platform(.visionOS, name: "visionOS", needsDestination: true),
+    Platform(.iOS, name: "iOS"),
+    Platform(.tvOS, name: "tvOS"),
+    Platform(.watchOS, name: "watchOS"),
+    Platform(.visionOS, name: "visionOS"),
     Platform(.linux, name: "Linux"),
   ]
 
   /// Creates a platform definition.
-  public init(
-    _ id: ID, name: String, needsDestination: Bool = false
-  ) {
+  public init(_ id: ID, name: String) {
     self.id = id
     self.name = name
-    self.needsDestination = needsDestination
-  }
-
-  /// Destination-picking configuration for simulator-backed Xcode platforms.
-  fileprivate var destinationPicker: DestinationPicker? {
-    switch id {
-      case .macOS, .catalyst, .linux:
-        return nil
-
-      case .iOS:
-        return DestinationPicker(
-          simulatorPlatform: "iOS Simulator",
-          deviceNamePrefix: "iPhone",
-          failureMessage: "No available non-beta iPhone simulator destination found.")
-
-      case .tvOS:
-        return DestinationPicker(
-          simulatorPlatform: "tvOS Simulator",
-          deviceNamePrefix: "Apple TV",
-          failureMessage: "No available non-beta Apple TV simulator destination found.")
-
-      case .watchOS:
-        return DestinationPicker(
-          simulatorPlatform: "watchOS Simulator",
-          deviceNamePrefix: "Apple Watch",
-          failureMessage: "No available non-beta Apple Watch simulator destination found.")
-
-      case .visionOS:
-        return DestinationPicker(
-          simulatorPlatform: "visionOS Simulator",
-          deviceNamePrefix: "Apple Vision",
-          failureMessage: "No available non-beta Apple Vision simulator destination found.")
-    }
-  }
-
-  /// Shell script that selects and boots a simulator destination for this platform.
-  fileprivate var destinationSelectionYAML: String {
-    guard let picker = destinationPicker else {
-      return ""
-    }
-
-    return
-      """
-                  echo "available=false" >> "$GITHUB_OUTPUT"
-                  mark_destination_unavailable() {
-                    local message="$1"
-                    local log="${2:-}"
-                    echo "::warning::$message"
-                    if [[ -n "$log" && -f "$log" ]]
-                    then
-                      cat "$log"
-                    fi
-                    {
-                      echo "### \(name) simulator unavailable"
-                      echo ""
-                      echo "$message"
-                      echo ""
-                      echo "Build/test steps for this job were skipped because the simulator destination could not be prepared."
-                    } >> "$GITHUB_STEP_SUMMARY"
-                  }
-
-                  if ! xcrun simctl list > logs/simctl-list-\(id.rawValue).log 2>&1
-                  then
-                    mark_destination_unavailable "Unable to connect to CoreSimulator while preparing \(name)." "logs/simctl-list-\(id.rawValue).log"
-                    exit 0
-                  fi
-
-                  if ! xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log 2>&1
-                  then
-                    mark_destination_unavailable "Unable to list \(name) simulator destinations." "logs/destinations-\(id.rawValue).log"
-                    exit 0
-                  fi
-
-                  if pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
-                  then
-                    echo "Using existing \(name) simulator destination."
-                  else
-                    echo "No available \(name) simulator destination found. Downloading platform support."
-                    if ! xcodebuild -downloadPlatform \(id.rawValue) > logs/download-\(id.rawValue).log 2>&1
-                    then
-                      mark_destination_unavailable "Unable to download \(name) platform support." "logs/download-\(id.rawValue).log"
-                      exit 0
-                    fi
-                    if ! xcodebuild -workspace \"$WORKSPACE\" -scheme \"$SCHEME\" -showdestinations > logs/destinations-\(id.rawValue).log 2>&1
-                    then
-                      mark_destination_unavailable "Unable to list \(name) simulator destinations after downloading platform support." "logs/destinations-\(id.rawValue).log"
-                      exit 0
-                    fi
-                    if ! pick_destination_if_available "\(id.rawValue)" "\(picker.simulatorPlatform)" "\(picker.deviceNamePrefix)"
-                    then
-                      mark_destination_unavailable "\(picker.failureMessage)" "logs/destinations-\(id.rawValue).log"
-                      exit 0
-                    fi
-                  fi
-                  echo "Selected \(name) simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                  if ! boot_destination "\(id.rawValue)" "\(name)"
-                  then
-                    mark_destination_unavailable "Failed to boot \(name) simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})." "logs/boot-\(id.rawValue).log"
-                    exit 0
-                  fi
-                  {
-                    echo "available=true"
-                    echo "id=$DESTINATION_ID"
-                    echo "name=$DESTINATION_NAME"
-                    echo "os=$DESTINATION_OS"
-                  } >> "$GITHUB_OUTPUT"
-      """
-
   }
 
   /// Returns the display name used for a workflow job.
@@ -164,7 +66,10 @@ public final class Platform: Identifiable, Sendable {
     if needsDestination {
       switch compiler.mac {
         case .xcode(let version, _), .toolchain(let version, _, _):
-          let xcodeName = compiler.id == .swiftNightly ? "Xcode \(version)" : "Xcode matching Swift \(compiler.short)"
+          let xcodeName =
+            compiler.id == .swiftNightly
+            ? "Xcode \(version)"
+            : "Xcode matching Swift \(compiler.short)"
           return "\(name) (\(compiler.name), \(xcodeName))"
       }
     }
@@ -172,627 +77,178 @@ public final class Platform: Identifiable, Sendable {
     return "\(name) (\(compiler.name))"
   }
 
-  /// Generates one or more workflow jobs for this platform and compiler set.
-  public func yaml(repo: Repo, compilers: [Compiler], configurations: [Configuration]) -> String {
-    let package = repo.name
-    let shouldTest = repo.testMode != .build
+  /// Generates concise caller jobs for this platform and compiler set.
+  public func yaml(repo: Repo, compilers: [Compiler]) -> String {
+    compilers.map { callerJob(repo: repo, compiler: $0) }.joined()
+  }
+}
 
-    var yaml = ""
+extension Platform {
+  /// Operation selected for a reusable workflow invocation.
+  fileprivate enum WorkflowOperation: String {
+    /// Compile without running tests.
+    case build
 
-    for compiler in compilers {
-      var xcodeToolchain: String? = nil
-      var xcodeVersion: String? = nil
-      var job =
+    /// Compile and run tests.
+    case test
+  }
+
+  /// Toolchain setup strategy selected for a reusable workflow invocation.
+  fileprivate enum SetupMode: String {
+    /// Install a released Swift toolchain.
+    case release
+
+    /// Install the latest development Swift snapshot.
+    case development
+
+    /// Install a versioned Swift snapshot.
+    case snapshot
+
+    /// Resolve an installed Xcode matching a released Swift compiler.
+    case xcodeRelease = "xcode-release"
+
+    /// Select Xcode and install a separate Swift snapshot toolchain.
+    case xcodeToolchain = "xcode-toolchain"
+  }
+
+  /// Generates one caller job that delegates to a reusable workflow.
+  fileprivate func callerJob(repo: Repo, compiler: Compiler) -> String {
+    let operation: WorkflowOperation =
+      repo.testMode != .build && (!needsDestination || compiler.supportsTesting(on: id))
+      ? .test
+      : .build
+    let helperPath = needsDestination ? Generator.xcodeJobPath : Generator.swiftJobPath
+    let runner = runner(for: compiler)
+    let notificationName = "\(name) (\(compiler.name))"
+
+    var yaml =
+      """
+
+        \(id)-\(compiler.id):
+          name: \(YAML.quoted(jobName(with: compiler)))
+          uses: ./\(helperPath)
+          with:
+      """
+
+    if needsDestination {
+      yaml.append(
         """
 
-            \(id)-\(compiler.id):
-                name: \(jobName(with: compiler))
+              package: \(YAML.quoted(repo.name))
+              platform: \(YAML.quoted(id.rawValue))
+              runner: \(YAML.quoted(runner))
+              swift-version: \(YAML.quoted(compiler.short))
+              compiler-id: \(YAML.quoted(compiler.id.rawValue))
+              preferred-xcode-version: \(YAML.quoted(preferredXcodeVersion(for: compiler)))
+              setup-mode: \(YAML.quoted(xcodeSetupMode(for: compiler).rawValue))
+              xcode-version: \(YAML.quoted(xcodeVersion(for: compiler)))
+              toolchain-branch: \(YAML.quoted(toolchainBranch(for: compiler)))
+              operation: \(YAML.quoted(operation.rawValue))
+        """
+      )
+    } else {
+      yaml.append(
         """
 
-      containerYAML(&job, compiler, &xcodeToolchain, &xcodeVersion)
-      commonYAML(&job)
-
-      if let branch = xcodeToolchain, let version = xcodeVersion {
-        selectToolchainYAML(&job, branch, version)
-      } else if needsDestination {
-        selectXcodeYAML(&job, compiler: compiler)
-      } else {
-        selectSwiftYAML(&job, compiler: compiler)
-      }
-
-      if needsDestination {
-        destinationPickerYAML(&job)
-      }
-
-      if needsDestination {
-        job.append(runXcodebuildYAML(configurations: configurations, package: package, test: shouldTest, compiler: compiler))
-      } else {
-        job.append(
-          runSwiftYAML(
-            configurations: configurations, test: shouldTest,
-            customToolchain: xcodeToolchain != nil, compiler: compiler))
-      }
-
-      if repo.uploadLogs {
-        uploadYAML(&job, compiler: compiler)
-      }
-
-      if repo.postSlackNotification {
-        job.append(notifyYAML(compiler: compiler))
-      }
-
-      yaml.append("\(job)\n\n")
+              platform: \(YAML.quoted(id.rawValue))
+              runner: \(YAML.quoted(runner))
+              swift-version: \(YAML.quoted(compiler.short))
+              compiler-id: \(YAML.quoted(compiler.id.rawValue))
+              setup-mode: \(YAML.quoted(swiftSetupMode(for: compiler).rawValue))
+              xcode-version: \(YAML.quoted(xcodeVersion(for: compiler)))
+              toolchain-branch: \(YAML.quoted(toolchainBranch(for: compiler)))
+              operation: \(YAML.quoted(operation.rawValue))
+              separate-test-methods: \(compiler.supportsSeparateTestMethods)
+        """
+      )
     }
 
+    yaml.append(
+      """
+
+            upload-logs: \(repo.uploadLogs)
+            post-slack: \(repo.postSlackNotification)
+            notification-job-name: \(YAML.quoted(notificationName))
+      """
+    )
+
+    if repo.postSlackNotification {
+      yaml.append(
+        """
+
+          secrets: inherit
+        """
+      )
+    }
+
+    yaml.append("\n")
     return yaml
   }
 
-  /// Emits Swift toolchain setup YAML for non-Xcode jobs.
-  fileprivate func selectSwiftYAML(
-    _ yaml: inout String, compiler: Compiler
-  ) {
+  /// Returns the runner image used for a compiler on this platform.
+  fileprivate func runner(for compiler: Compiler) -> String {
+    if id == .linux {
+      return compiler.linux.hasPrefix("ubuntu-") ? compiler.linux : "ubuntu-24.04"
+    }
+
+    switch compiler.mac {
+      case .xcode(_, let image), .toolchain(_, _, let image):
+        return image
+    }
+  }
+
+  /// Returns the reusable Swift workflow setup mode.
+  fileprivate func swiftSetupMode(for compiler: Compiler) -> SetupMode {
+    if id != .linux, case .toolchain = compiler.mac {
+      return .xcodeToolchain
+    }
+
     if compiler.id == .swiftNightly {
-      yaml.append(
-        """
+      return .development
+    }
 
-                - name: Select Swift
-                  uses: SwiftyLab/setup-swift@v1
-                  with:
-                    development: true
-        """
-      )
-    } else if compiler.isSnapshot {
-      yaml.append(
-        """
+    if compiler.isSnapshot {
+      return .snapshot
+    }
 
-                - name: Select Swift
-                  uses: SwiftyLab/setup-swift@v1
-                  with:
-                    development: true
-                    swift-version: "\(compiler.short)"
-        """
-      )
-    } else {
-      // TODO: Remove this Linux-only workaround once setup-swift@v3's signature verification
-      // is reliable again in GitHub-hosted CI. References:
-      // https://github.com/swift-actions/setup-swift/blob/v3/action.yml
-      // https://docs.github.com/en/actions/how-tos/use-cases-and-examples/building-and-testing/building-and-testing-swift?apiVersion=2022-11-28
-      let skipVerification = id == .linux ? "\n            skip-verify-signature: true" : ""
-      yaml.append(
-        """
+    return .release
+  }
 
-                - name: Select Swift
-                  uses: elegantchaos/setup-swift@allow-patch
-                  with:
-                    swift-version: "\(compiler.short)"\(skipVerification)
-                    allow-patch: true
-        """
-      )
+  /// Returns the reusable Xcode workflow setup mode.
+  fileprivate func xcodeSetupMode(for compiler: Compiler) -> SetupMode {
+    switch compiler.mac {
+      case .xcode:
+        return .xcodeRelease
+      case .toolchain:
+        return .xcodeToolchain
     }
   }
 
-  /// Emits `swift build`/`swift test` steps for non-Xcode jobs.
-  fileprivate func runSwiftYAML(
-    configurations: [Configuration], test: Bool, customToolchain: Bool, compiler: Compiler
-  ) -> String {
-    var yaml = """
-
-              - name: Swift Version
-                run: swift --version
-      """
-
-    let pathFix = customToolchain ? "export PATH=\"swift-latest:$PATH\"; " : ""
-    let shouldBeautify = id == .macOS
-    if test {
-      for config in configurations {
-        yaml.append(
-          compiler.supportsSeparateTestMethods
-            ? """
-
-                    - name: Build (\(config))
-                      run: |
-                        \(loggedCommandYAML(
-                          command: "\(pathFix)swift build --configuration \(config)\(compiler.quietFlag)",
-                          logName: "swift-build-\(config).log",
-                          successMessage: "Build (\(config)) succeeded.",
-                          failureMessage: "Build (\(config)) failed.",
-                          beautify: shouldBeautify))
-                    - name: Test (\(config) XCTest)
-                      run: |
-                        \(loggedCommandYAML(
-                          command: "\(pathFix)swift test --disable-swift-testing --configuration \(config)",
-                          logName: "swift-test-xctest-\(config).log",
-                          successMessage: "Test (\(config) XCTest) succeeded.",
-                          failureMessage: "Test (\(config) XCTest) failed.",
-                          beautify: shouldBeautify))
-                    - name: Test (\(config) Swift Testing)
-                      run: |
-                        \(loggedCommandYAML(
-                          command: "\(pathFix)swift test --disable-xctest --configuration \(config)",
-                          logName: "swift-test-swift-testing-\(config).log",
-                          successMessage: "Test (\(config) Swift Testing) succeeded.",
-                          failureMessage: "Test (\(config) Swift Testing) failed.",
-                          beautify: shouldBeautify))
-            """
-            : """
-
-                    - name: Build (\(config))
-                      run: |
-                        \(loggedCommandYAML(
-                          command: "\(pathFix)swift build --configuration \(config)\(compiler.quietFlag)",
-                          logName: "swift-build-\(config).log",
-                          successMessage: "Build (\(config)) succeeded.",
-                          failureMessage: "Build (\(config)) failed.",
-                          beautify: shouldBeautify))
-                    - name: Test (\(config))
-                      run: |
-                        \(loggedCommandYAML(
-                          command: "\(pathFix)swift test --configuration \(config)",
-                          logName: "swift-test-\(config).log",
-                          successMessage: "Test (\(config)) succeeded.",
-                          failureMessage: "Test (\(config)) failed.",
-                          beautify: shouldBeautify))
-            """
-        )
-      }
-    } else {
-      for config in configurations {
-        yaml.append(
-          """
-
-                  - name: Build (\(config))
-                    run: |
-                      \(loggedCommandYAML(
-                        command: "\(pathFix)swift build -c \(config)\(compiler.quietFlag)",
-                        logName: "swift-build-\(config).log",
-                        successMessage: "Build (\(config)) succeeded.",
-                        failureMessage: "Build (\(config)) failed.",
-                        beautify: shouldBeautify))
-          """
-        )
-      }
-    }
-
-    return yaml
-  }
-
-  /// Returns a script that captures command output to a log and prints concise success/failure output.
-  fileprivate func loggedCommandYAML(
-    command: String, logName: String, successMessage: String, failureMessage: String, beautify: Bool
-  ) -> String {
-    let showLog =
-      beautify
-      ? "cat \"$LOG\" | xcbeautify --quiet --disable-logging --renderer github-actions || cat \"$LOG\""
-      : "cat \"$LOG\""
-
-    let script = """
-      LOG="logs/\(logName)"
-      if \(command) >"$LOG" 2>&1
-      then
-        echo "\(successMessage)"
-      else
-        echo "::error::\(failureMessage)"
-        \(showLog)
-        echo "\(failureMessage)"
-        exit 1
-      fi
-      """
-    let indent = "            "
-    return script.replacingOccurrences(of: "\n", with: "\n\(indent)")
-  }
-
-  /// Emits `xcodebuild` steps for simulator and Apple-platform jobs.
-  fileprivate func runXcodebuildYAML(
-    configurations: [Configuration], package: String, test: Bool, compiler: Compiler
-  ) -> String {
-    var yaml = ""
-    let destination: String
-    let destinationDescription: String
-    if needsDestination, destinationPicker != nil {
-      destination = "-destination \"id=$DESTINATION_ID\""
-      destinationDescription =
-        " on ${DESTINATION_NAME:-unknown} (\(name) ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})"
-    } else {
-      destination = ""
-      destinationDescription = ""
-    }
-
-    var setup = """
-                  set -o pipefail
-                  source "setup.sh"
-      """
-    if needsDestination, destinationPicker != nil {
-      setup.append(
-        """
-
-                      DESTINATION_ID="${{ steps.select-destination.outputs.id }}"
-                      DESTINATION_NAME="${{ steps.select-destination.outputs.name }}"
-                      DESTINATION_OS="${{ steps.select-destination.outputs.os }}"
-        """)
-    }
-
-    let condition =
-      needsDestination && destinationPicker != nil
-      ? "          if: ${{ steps.select-destination.outputs.available == 'true' }}\n"
-      : ""
-
-    yaml.append(
-      """
-
-              - name: Detect Workspace & Scheme (\(name))
-                run: |
-                  WORKSPACE="\(package).xcworkspace"
-                  if [[ ! -e "$WORKSPACE" ]]
-                  then
-                    WORKSPACE="."
-                    GOTPACKAGE=$(xcodebuild -workspace . -list | (grep \(package)-Package || true))
-                    if [[ $GOTPACKAGE != "" ]]
-                    then
-                      SCHEME="\(package)-Package"
-                    else
-                      SCHEME="\(package)"
-                    fi
-                  else
-                    SCHEME="\(package)-\(name)"
-                  fi
-                  echo "export PATH='swift-latest:$PATH'; WORKSPACE='$WORKSPACE'; SCHEME='$SCHEME'" > setup.sh
-      """
-    )
-    if needsDestination, destinationPicker != nil {
-      yaml.append(
-        """
-
-                - name: Select Simulator Destination (\(name))
-                  id: select-destination
-                  run: |
-                    source "setup.sh"
-                    source "destination-picker.sh"
-        \(destinationSelectionYAML)
-        """)
-    }
-
-    if test && compiler.supportsTesting(on: id) {
-      for config in configurations {
-        let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
-        yaml.append(
-          """
-
-                  - name: Test (\(name) \(config.name))
-          \(condition)\
-                    run: |
-          \(setup)
-                      echo "Testing workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
-                      xcodebuild test -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-test-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
-          """
-        )
-      }
-    } else {
-      for config in configurations {
-        let extraArgs = config == .release ? "ENABLE_TESTABILITY=YES" : ""
-        yaml.append(
-          """
-
-                  - name: Build (\(name) \(config))
-          \(condition)\
-                    run: |
-          \(setup)
-                      echo "Building workspace $WORKSPACE scheme $SCHEME\(destinationDescription)."
-                      xcodebuild clean build -workspace "$WORKSPACE" -scheme "$SCHEME" \(destination) -configuration \(config.xcodeID) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \(extraArgs) | tee logs/xcodebuild-\(id)-build-\(config).log | xcbeautify --quiet --disable-logging --renderer github-actions
-          """
-        )
-      }
-    }
-
-    return yaml
-  }
-
-  /// Emits a helper script used by Xcode jobs to pick the newest suitable simulator destination.
-  fileprivate func destinationPickerYAML(_ yaml: inout String) {
-    yaml.append(
-      """
-
-              - name: Prepare Destination Picker
-                run: |
-                  cat > destination-picker.sh <<'EOF'
-                  extract_destination_field() {
-                    local line="$1"
-                    local field="$2"
-                    printf '%s\\n' "$line" | sed -nE "s/.*${field}:[[:space:]]*([^,}]+).*/\\\\1/p" | xargs
-                  }
-                  load_best_destination() {
-                    local destinations_log="$1"
-                    local simulator_platform="$2"
-                    local device_name_prefix="$3"
-                    BEST_DESTINATION=$(
-                      while IFS= read -r line
-                      do
-                        [[ "$line" == *"platform:${simulator_platform}"* ]] || continue
-                        [[ "$line" == *"name:${device_name_prefix}"* ]] || continue
-                        [[ "$line" != *"unavailable"* ]] || continue
-
-                        id=$(extract_destination_field "$line" "id")
-                        os=$(extract_destination_field "$line" "OS")
-                        name=$(extract_destination_field "$line" "name")
-
-                        [[ -n "$id" && -n "$os" ]] || continue
-
-                        IFS=. read -r major minor patch <<< "$os"
-                        printf "%d\\t%d\\t%d\\t%s\\t%s\\t%s\\n" "${major:-0}" "${minor:-0}" "${patch:-0}" "$os" "$id" "$name"
-                      done < "$destinations_log" | sort -k1,1nr -k2,2nr -k3,3nr | head -n 1
-                    )
-                    DESTINATION_OS=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $4}' | xargs)
-                    DESTINATION_ID=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $5}' | xargs)
-                    DESTINATION_NAME=$(echo "$BEST_DESTINATION" | awk -F"\\t" '{print $6}' | xargs)
-                    [[ "$DESTINATION_NAME" != "" && "$DESTINATION_OS" != "" ]]
-                  }
-                  pick_destination_if_available() {
-                    local platform_id="$1"
-                    local simulator_platform="$2"
-                    local device_name_prefix="$3"
-                    local destinations_log="logs/destinations-${platform_id}.log"
-
-                    load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
-                  }
-                  pick_destination() {
-                    local platform_id="$1"
-                    local simulator_platform="$2"
-                    local device_name_prefix="$3"
-                    local failure_message="$4"
-                    local destinations_log="logs/destinations-${platform_id}.log"
-
-                    if ! load_best_destination "$destinations_log" "$simulator_platform" "$device_name_prefix"
-                    then
-                      echo "$failure_message"
-                      cat "$destinations_log"
-                      return 1
-                    fi
-                  }
-                  boot_destination() {
-                    local platform_id="$1"
-                    local platform_name="$2"
-                    local boot_log="logs/boot-${platform_id}.log"
-
-                    echo "Booting ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                    xcrun simctl boot "$DESTINATION_ID" >"$boot_log" 2>&1 || true
-                    if ! xcrun simctl bootstatus "$DESTINATION_ID" -b >>"$boot_log" 2>&1
-                    then
-                      echo "Failed to boot ${platform_name} simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                      cat "$boot_log"
-                      return 1
-                    fi
-                  }
-                  EOF
-      """
-    )
-  }
-
-  /// Emits an artifact-upload step for the per-job `logs/` directory.
-  fileprivate func uploadYAML(_ yaml: inout String, compiler: Compiler) {
-    yaml.append(
-      """
-
-              - name: Upload Logs
-                uses: actions/upload-artifact@v7
-                if: always()
-                with:
-                  name: \(id)-\(compiler.id)-logs
-                  path: logs
-      """
-    )
-  }
-
-  /// Emits an optional Slack notification step.
-  fileprivate func notifyYAML(compiler: Compiler) -> String {
-    var yaml = ""
-    yaml.append(
-      """
-
-              - name: Slack Notification
-                uses: elegantchaos/slatify@master
-                if: always()
-                with:
-                  type: ${{ job.status }}
-                  job_name: '\(name) (\(compiler.name))'
-                  mention_if: 'failure'
-                  url: ${{ secrets.SLACK_WEBHOOK }}
-      """
-    )
-    return yaml
-  }
-
-  /// Emits steps that select Xcode and install a nightly snapshot toolchain.
-  fileprivate func selectToolchainYAML(_ yaml: inout String, _ branch: String, _ version: String) {
-    let download =
-      """
-                  branch="\(branch)"
-                  wget --quiet https://download.swift.org/$branch/xcode/latest-build.yml
-                  grep "download:" < latest-build.yml > filtered.yml
-                  sed -e 's/-osx.pkg//g' filtered.yml > stripped.yml
-                  sed -e 's/:[^:\\/\\/]/YML="/g;s/$/"/g;s/ *=/=/g' stripped.yml > snapshot.sh
-                  source snapshot.sh
-                  echo "Installing Toolchain: $downloadYML"
-                  wget --quiet https://swift.org/builds/$branch/xcode/$downloadYML/$downloadYML-osx.pkg
-                  sudo installer -pkg $downloadYML-osx.pkg -target /
-                  ln -s "/Library/Developer/Toolchains/$downloadYML.xctoolchain/usr/bin" swift-latest
-      """
-
-    yaml.append(
-      """
-
-              - name: Select Xcode Version
-                uses: maxim-lobanov/setup-xcode@v1
-                with:
-                  xcode-version: "\(version)"
-              - name: Install Toolchain
-                run: |
-      \(download)
-                  ls -d /Applications/Xcode* > logs/xcode-versions.log
-                  swift --version
-              - name: Xcode Version
-                run: |
-                  xcodebuild -version
-                  xcrun swift --version
-      """
-    )
-  }
-
-  /// Emits steps that resolve and select the Xcode version matching the requested Swift version.
-  fileprivate func selectXcodeYAML(_ yaml: inout String, compiler: Compiler) {
-    let preferredXcodeMajorMinor: String
+  /// Returns the preferred Xcode major/minor version.
+  fileprivate func preferredXcodeVersion(for compiler: Compiler) -> String {
     switch compiler.mac {
       case .xcode(let version, _):
-        preferredXcodeMajorMinor = version.split(separator: ".").prefix(2).joined(separator: ".")
+        return version.split(separator: ".").prefix(2).joined(separator: ".")
       case .toolchain:
-        preferredXcodeMajorMinor = ""
-    }
-
-    yaml.append(
-      """
-
-              - name: Resolve Xcode Version
-                id: resolve-xcode
-                run: |
-                  REQUESTED_SWIFT="\(compiler.short)"
-                  PREFERRED_XCODE="\(preferredXcodeMajorMinor)"
-                  ls -d /Applications/Xcode* > logs/xcode-versions.log
-                  FOUND_XCODE=""
-                  while read -r APP
-                  do
-                    DEV_DIR="$APP/Contents/Developer"
-                    SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
-                    XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
-                    if [[ "$SWIFT_VERSION" == "$REQUESTED_SWIFT" ]]
-                    then
-                      FOUND_XCODE="$XCODE_VERSION"
-                      if [[ "$APP" == *[Bb][Ee][Tt][Aa]* ]]
-                      then
-                        FOUND_XCODE="$FOUND_XCODE-beta"
-                      fi
-                      if [[ "$XCODE_VERSION" == "$PREFERRED_XCODE"* ]]
-                      then
-                        break
-                      fi
-                    fi
-                  done < <(ls -d /Applications/Xcode*.app | sort -Vr)
-
-                  if [[ "$FOUND_XCODE" == "" ]]
-                  then
-                    echo "No installed Xcode matched Swift $REQUESTED_SWIFT."
-                    echo "Detected toolchains:"
-                    while read -r APP
-                    do
-                      DEV_DIR="$APP/Contents/Developer"
-                      XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
-                      SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
-                      echo "  Xcode $XCODE_VERSION -> Swift $SWIFT_VERSION"
-                    done < <(ls -d /Applications/Xcode*.app | sort -Vr)
-                    exit 1
-                  fi
-
-                  echo "version=$FOUND_XCODE" >> "$GITHUB_OUTPUT"
-              - name: Select Xcode Version
-                uses: maxim-lobanov/setup-xcode@v1
-                with:
-                  xcode-version: ${{ steps.resolve-xcode.outputs.version }}
-              - name: Xcode Version
-                run: |
-                  xcodebuild -version
-                  swift --version
-      """
-    )
-  }
-
-  /// Emits runner selection and toolchain environment for the current platform/compiler.
-  fileprivate func containerYAML(
-    _ yaml: inout String, _ compiler: Compiler, _ xcodeToolchain: inout String?,
-    _ xcodeVersion: inout String?
-  ) {
-    switch id {
-      case .linux:
-        yaml.append(
-          """
-
-                  runs-on: ubuntu-24.04
-          """
-        )
-
-      default:
-        let macosImage: String
-        switch compiler.mac {
-          case .xcode(let version, let image):
-            xcodeVersion = version
-            macosImage = image
-
-          case .toolchain(let version, let branch, let image):
-            xcodeVersion = version
-            xcodeToolchain = branch
-            macosImage = image
-            yaml.append(
-              """
-
-                      env:
-                          TOOLCHAINS: swift
-              """
-            )
-        }
-
-        yaml.append(
-          """
-
-                  runs-on: \(macosImage)
-          """
-        )
-
+        return ""
     }
   }
 
-  /// Emits common workflow steps shared by all jobs.
-  fileprivate func commonYAML(_ yaml: inout String) {
-    yaml.append(
-      """
+  /// Returns the concrete Xcode version configured for the compiler.
+  fileprivate func xcodeVersion(for compiler: Compiler) -> String {
+    switch compiler.mac {
+      case .xcode(let version, _), .toolchain(let version, _, _):
+        return version
+    }
+  }
 
-              steps:
-              - name: Checkout
-                uses: actions/checkout@v6
-              - name: Make Logs Directory
-                run: |
-                  LOGS_DIR="${GITHUB_WORKSPACE:-$PWD}/logs"
-                  mkdir -p "$LOGS_DIR"
-                  if [[ "$PWD/logs" != "$LOGS_DIR" && ! -e logs ]]
-                  then
-                    ln -s "$LOGS_DIR" logs
-                  fi
-                  {
-                    echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                    echo "runner=${RUNNER_NAME:-unknown} (${RUNNER_OS:-unknown}/${RUNNER_ARCH:-unknown})"
-                    echo "workflow=${GITHUB_WORKFLOW:-unknown}"
-                    echo "job=${GITHUB_JOB:-unknown}"
-                    echo "run_id=${GITHUB_RUN_ID:-unknown}"
-                    echo "ref=${GITHUB_REF:-unknown}"
-                    echo "sha=${GITHUB_SHA:-unknown}"
-                  } > "$LOGS_DIR/run.log"
-      """
-    )
-
-    if (id == .macOS) || needsDestination {
-      yaml.append(
-        """
-
-                - name: Install xcbeautify
-                  run: |
-                    if command -v xcbeautify >/dev/null 2>&1
-                    then
-                      echo "xcbeautify already installed."
-                    elif brew install xcbeautify > logs/install-xcbeautify.log 2>&1
-                    then
-                      echo "xcbeautify installed."
-                    else
-                      echo "::error::Failed to install xcbeautify."
-                      cat logs/install-xcbeautify.log
-                      exit 1
-                    fi
-        """
-      )
+  /// Returns the Swift snapshot branch configured for the compiler.
+  fileprivate func toolchainBranch(for compiler: Compiler) -> String {
+    switch compiler.mac {
+      case .xcode:
+        return ""
+      case .toolchain(_, let branch, _):
+        return branch
     }
   }
 
