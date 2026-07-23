@@ -91,14 +91,6 @@ extension Platform {
 
     /// Compile and run tests.
     case test
-
-    /// Human-readable operation used in generated step names.
-    var name: String {
-      switch self {
-        case .build: "Build"
-        case .test: "Test"
-      }
-    }
   }
 
   /// Toolchain setup strategy selected for a reusable workflow invocation.
@@ -150,7 +142,6 @@ extension Platform {
               preferred-xcode-version: \(YAML.quoted(preferredXcodeVersion(for: compiler)))
               setup-mode: \(YAML.quoted(xcodeSetupMode(for: compiler).rawValue))
               operation: \(YAML.quoted(operation.rawValue))
-              operation-name: \(YAML.quoted(operation.name))
         """
       )
     } else {

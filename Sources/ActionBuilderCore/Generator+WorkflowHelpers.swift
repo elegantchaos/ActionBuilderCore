@@ -122,9 +122,6 @@ extension Generator {
               operation:
                 required: true
                 type: string
-              operation-name:
-                required: true
-                type: string
               notification-job-name:
                 required: false
                 type: string
@@ -666,7 +663,7 @@ extension Generator {
     return
       """
 
-              - name: ${{ inputs.operation-name }} (${{ inputs.platform }} \(configuration.name))
+              - name: ${{ inputs.operation == 'test' && 'Test' || 'Build' }} (${{ inputs.platform }} \(configuration.name))
                 if: ${{ steps.select-destination.outputs.available == 'true' }}
                 env:
                   DESTINATION_ID: ${{ steps.select-destination.outputs.id }}

@@ -126,7 +126,7 @@ struct GeneratorTests {
     #expect(workflow.contains("steps:") == false)
   }
 
-  /// Each reusable workflow declares every required input supplied by its callers.
+  /// Reusable workflows derive presentation from the operation input.
   @Test
   func reusableWorkflowInputContractsMatchCallers() throws {
     let repo = Repo(
@@ -135,17 +135,12 @@ struct GeneratorTests {
       platforms: [.iOS, .linux],
       compilers: [.swift62]
     )
+    let callerWorkflow = try workflow(named: "Tests.yml", for: repo)
     let swiftWorkflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
     let xcodeWorkflow = try workflow(named: "ActionBuilderXcodeJob.yml", for: repo)
-    let operationNameInput =
-      """
-            operation-name:
-              required: true
-              type: string
-      """
-
-    #expect(swiftWorkflow.contains(operationNameInput) == false)
-    #expect(xcodeWorkflow.contains(operationNameInput))
+    #expect(callerWorkflow.contains("operation-name") == false)
+    #expect(swiftWorkflow.contains("operation-name") == false)
+    #expect(xcodeWorkflow.contains("operation-name") == false)
   }
 
   /// Linux and macOS share the Swift helper while retaining platform-specific setup.
@@ -311,11 +306,10 @@ struct GeneratorTests {
     #expect(workflow.contains("SIMULATOR_PLATFORM=\"watchOS Simulator\""))
     #expect(workflow.contains("SIMULATOR_PLATFORM=\"visionOS Simulator\""))
     #expect(workflow.contains("xcodebuild -downloadPlatform \"$PLATFORM\""))
-    #expect(workflow.contains("- name: ${{ inputs.operation-name }}"))
     #expect(
       workflow.contains(
         """
-                - name: ${{ inputs.operation-name }} (${{ inputs.platform }} Release)
+                - name: ${{ inputs.operation == 'test' && 'Test' || 'Build' }} (${{ inputs.platform }} Release)
                   if: ${{ steps.select-destination.outputs.available == 'true' }}
         """))
     #expect(workflow.contains("if [[ \"$OPERATION\" == \"test\" ]]"))
@@ -344,7 +338,6 @@ struct GeneratorTests {
               preferred-xcode-version: "15.4"
               setup-mode: "xcode-release"
               operation: "test"
-              operation-name: "Test"
         """))
     #expect(
       workflow.contains(
@@ -356,7 +349,6 @@ struct GeneratorTests {
               preferred-xcode-version: "15.4"
               setup-mode: "xcode-release"
               operation: "build"
-              operation-name: "Build"
         """))
   }
 
@@ -375,8 +367,14 @@ struct GeneratorTests {
 
     #expect(swiftWorkflow.contains("Build (debug)"))
     #expect(swiftWorkflow.contains("Build (release)"))
-    #expect(xcodeWorkflow.contains("${{ inputs.operation-name }} (${{ inputs.platform }} Debug)"))
-    #expect(xcodeWorkflow.contains("${{ inputs.operation-name }} (${{ inputs.platform }} Release)"))
+    #expect(
+      xcodeWorkflow.contains(
+        "${{ inputs.operation == 'test' && 'Test' || 'Build' }} (${{ inputs.platform }} Debug)"
+      ))
+    #expect(
+      xcodeWorkflow.contains(
+        "${{ inputs.operation == 'test' && 'Test' || 'Build' }} (${{ inputs.platform }} Release)"
+      ))
   }
 
   /// Slack-enabled callers inherit secrets and helpers declare the webhook.
