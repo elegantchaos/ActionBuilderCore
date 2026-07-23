@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Regenerate EndToEnd workflows
         run: Extras/Scripts/refresh-endtoend.sh
       - name: Verify generated workflows are current
