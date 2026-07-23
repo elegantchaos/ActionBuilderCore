@@ -1,6 +1,6 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-//  Created by Sam Deane on 30/06/22.
-//  All code (c) 2022 - present day, Elegant Chaos Limited.
+//  Created by Sam Deane on 23/07/2026.
+//  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
@@ -38,6 +38,8 @@ public struct Repo: Equatable, Sendable {
   public var configurations: Set<Configuration>
   /// Test mode for generated jobs.
   public var testMode: TestMode
+  /// Frameworks imported by package test targets.
+  public var testFrameworks: Set<TestFramework>
   /// Whether to run only earliest and latest selected compiler.
   public let firstlast: Bool
   /// Whether to include Slack notification steps.
@@ -52,6 +54,7 @@ public struct Repo: Equatable, Sendable {
     name: String, owner: String, workflow: String = "Tests", platforms: [Platform.ID] = [],
     compilers: [Compiler.ID] = [], configurations: [Configuration] = Self.defaultConfigurations,
     testMode: TestMode = Self.defaultTest, firstlast: Bool = Self.defaultFirstLast,
+    testFrameworks: Set<TestFramework> = Set(TestFramework.allCases),
     postSlackNotification: Bool = Self.defaultPostSlackNotification,
     upload: Bool = Self.defaultUploadLogs, header: Bool = Self.defaultHeader
   ) {
@@ -62,6 +65,7 @@ public struct Repo: Equatable, Sendable {
     self.compilers = Set(compilers)
     self.configurations = Set(configurations)
     self.testMode = testMode
+    self.testFrameworks = testFrameworks
     self.firstlast = firstlast
     self.postSlackNotification = postSlackNotification
     self.uploadLogs = upload
@@ -77,6 +81,7 @@ public struct Repo: Equatable, Sendable {
     self.compilers = settings?.compilers ?? []
     self.configurations = settings?.configurations ?? Set(Self.defaultConfigurations)
     self.testMode = TestMode(settings?.test)
+    self.testFrameworks = Set(TestFramework.allCases)
     self.firstlast = settings?.firstlast ?? Self.defaultFirstLast
     self.uploadLogs = settings?.uploadLogs ?? Self.defaultUploadLogs
     self.header = settings?.header ?? Self.defaultHeader
@@ -122,17 +127,40 @@ public struct Repo: Equatable, Sendable {
   /// Final compiler list to run, honoring the `firstlast` setting.
   var compilersToTest: [Compiler] {
     let supportedCompilers = enabledCompilers
-    if firstlast && (supportedCompilers.count > 0) {
-      let first = supportedCompilers.first!
-      let last = supportedCompilers.last!
-      if first.id != last.id {
-        return [first, last]
-      } else {
-        return [first]
-      }
-    } else {
+    guard firstlast, let first = supportedCompilers.first, let last = supportedCompilers.last else {
       return supportedCompilers
     }
+
+    return first.id == last.id ? [first] : [first, last]
+  }
+
+  /// Determines which Swift test commands the reusable workflow must contain.
+  var swiftTestPlan: SwiftTestPlan {
+    guard testMode != .build else {
+      return .none
+    }
+
+    let separateTestSupport = compilersToTest.map(\.supportsSeparateTestMethods)
+    guard testFrameworks.isEmpty == false, separateTestSupport.contains(true) else {
+      return .combined
+    }
+
+    return separateTestSupport.contains(false) ? .compilerDependent : .filtered
+  }
+
+  /// Swift test-command layouts supported by a generated reusable workflow.
+  enum SwiftTestPlan {
+    /// Do not generate test steps.
+    case none
+
+    /// Run the package's tests with one unfiltered command.
+    case combined
+
+    /// Generate commands only for the detected frameworks.
+    case filtered
+
+    /// Select filtered or combined commands based on compiler capability.
+    case compilerDependent
   }
 
   /// Controls whether jobs only build or also run tests.
@@ -147,18 +175,18 @@ public struct Repo: Equatable, Sendable {
     /// Initializes test mode from legacy optional boolean settings.
     init(_ shouldTest: Bool?) {
       switch shouldTest {
-      case false: self = .build
-      case true: self = .test
-      default: self = .auto
+        case false: self = .build
+        case true: self = .test
+        default: self = .auto
       }
     }
 
     /// Converts test mode to the persisted optional boolean representation.
     var asBool: Bool? {
       switch self {
-      case .test: return true
-      case .build: return false
-      case .auto: return nil
+        case .test: return true
+        case .build: return false
+        case .auto: return nil
       }
     }
   }

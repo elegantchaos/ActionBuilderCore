@@ -26,7 +26,7 @@ extension Repo {
 
     // Derive platforms only when no explicit platform settings were provided.
     if repo.enabledPlatforms.isEmpty {
-      for name in package.platforms.map(\.platformName) {
+      for name in package.platforms.map(\.name) {
         if let id = Platform.ID(rawInsensitive: name) {
           repo.platforms.insert(id)
         } else if name.lowercased() == "ubuntu" {
@@ -42,7 +42,7 @@ extension Repo {
 
     // Derive compilers only when no explicit compiler settings were provided.
     if repo.enabledCompilers.isEmpty {
-      let version = SemanticVersion(package.toolsVersion._version)
+      let version = SemanticVersion(package.toolsVersion)
       let parsedVersion = (version.major, version.minor)
       let earliestVersion = Compiler.ID.earliestRelease.versionTuple ?? parsedVersion
       let latestVersion = Compiler.ID.latestRelease.versionTuple ?? parsedVersion
@@ -68,6 +68,7 @@ extension Repo {
     if repo.testMode == .auto {
       repo.testMode = package.hasTestTargets ? .test : .build
     }
+    repo.testFrameworks = package.testFrameworks
 
     self = repo
   }
