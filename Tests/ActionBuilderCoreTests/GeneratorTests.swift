@@ -126,6 +126,28 @@ struct GeneratorTests {
     #expect(workflow.contains("steps:") == false)
   }
 
+  /// Each reusable workflow declares every required input supplied by its callers.
+  @Test
+  func reusableWorkflowInputContractsMatchCallers() throws {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.iOS, .linux],
+      compilers: [.swift62]
+    )
+    let swiftWorkflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let xcodeWorkflow = try workflow(named: "ActionBuilderXcodeJob.yml", for: repo)
+    let operationNameInput =
+      """
+            operation-name:
+              required: true
+              type: string
+      """
+
+    #expect(swiftWorkflow.contains(operationNameInput) == false)
+    #expect(xcodeWorkflow.contains(operationNameInput))
+  }
+
   /// Linux and macOS share the Swift helper while retaining platform-specific setup.
   @Test
   func swiftHelperSupportsLinuxAndMacOS() throws {

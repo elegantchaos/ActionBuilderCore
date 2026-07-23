@@ -40,9 +40,6 @@ extension Generator {
               operation:
                 required: true
                 type: string
-              operation-name:
-                required: true
-                type: string
               separate-test-methods:
                 required: false
                 type: boolean
@@ -123,6 +120,9 @@ extension Generator {
                 type: string
                 default: ""
               operation:
+                required: true
+                type: string
+              operation-name:
                 required: true
                 type: string
               notification-job-name:
