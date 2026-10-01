@@ -72,6 +72,64 @@ struct RepoTests {
     #expect(repo.testFrameworks == [.swiftTesting])
   }
 
+  /// The newest tools version pins to that exact compiler.
+  @Test
+  func latestToolsVersionPinsItsCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.4") == [.swift64])
+    #expect(Compiler.ID.latestRelease == .swift64)
+  }
+
+  /// An older known tools version tests that compiler and the latest.
+  @Test
+  func olderToolsVersionTestsItAndTheLatest() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.3") == [.swift63, .swiftLatest])
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.0") == [.swift60, .swiftLatest])
+  }
+
+  /// Tools versions older than the earliest supported compiler raise to it.
+  @Test
+  func ancientToolsVersionRaisesToTheEarliestCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "5.6") == [.earliestRelease, .swiftLatest])
+  }
+
+  /// Tools versions newer than any known compiler pin to the latest.
+  @Test
+  func futureToolsVersionPinsToTheLatestCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "99.0") == [.swiftLatest])
+  }
+
+  /// Swift 6.4 builds with Xcode 27.0, which GitHub provides on its own `xcode-27` runner image.
+  /// The `macos-26` image has no Xcode 27.
+  @Test
+  func swift64UsesXcode27OnItsOwnRunnerImage() throws {
+    let compiler = try #require(Compiler.compilers.first { $0.id == .swift64 })
+
+    #expect(compiler.name == "Swift 6.4")
+    #expect(compiler.short == "6.4")
+    guard case .xcode(let version, let image) = compiler.mac else {
+      Issue.record("Expected Swift 6.4 to select an Xcode version.")
+      return
+    }
+    #expect(version == "27.0.0")
+    #expect(image == "xcode-27")
+  }
+
+  /// Enabled compilers come out oldest to newest, however the set of IDs happens to iterate, so the
+  /// jobs in generated workflows are in a stable order.
+  @Test
+  func enabledCompilersAreOrderedOldestToNewest() {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.macOS],
+      compilers: [.swiftNightly, .swift64, .swift510, .swift62, .swift60],
+      firstlast: false
+    )
+
+    #expect(
+      repo.enabledCompilers.map(\.id) == [.swift510, .swift60, .swift62, .swift64, .swiftNightly])
+  }
+
   /// Legacy compiler identifiers collapse to the earliest supported compiler.
   @Test
   func legacyCompilerIdentifiersMapToEarliestCompiler() {

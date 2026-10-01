@@ -4,6 +4,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
+import SemanticVersion
 
 /// Describes a Swift toolchain target and how to run it on GitHub Actions.
 public final class Compiler: Identifiable, Sendable {
@@ -91,6 +92,8 @@ public final class Compiler: Identifiable, Sendable {
     case swift62
     /// Swift 6.3.
     case swift63
+    /// Swift 6.4.
+    case swift64
 
     /// symbolic ID which indicates the latest Swift version.
     case swiftLatest
@@ -102,7 +105,36 @@ public final class Compiler: Identifiable, Sendable {
     static let earliestRelease = Self.swift510
 
     /// Actual ID of the latest fullrelease we know about.
-    static let latestRelease = Self.swift63
+    static let latestRelease = Self.swift64
+
+    /// The compilers to test when a package doesn't say, derived from its `swift-tools-version`.
+    ///
+    /// A version we know tests that compiler and the latest release. One older than the earliest
+    /// supported release is raised to it, and one newer than the latest is pinned to the latest.
+    static func derived(fromToolsVersion toolsVersion: String) -> Set<ID> {
+      let version = SemanticVersion(toolsVersion)
+      let parsedVersion = (version.major, version.minor)
+      let earliestVersion = earliestRelease.versionTuple ?? parsedVersion
+      let latestVersion = latestRelease.versionTuple ?? parsedVersion
+      let swiftVersion = "swift\(version.major)\(version.minor)"
+      if !(version.isInvalid || version.isUnknown), let compiler = ID(rawValue: swiftVersion),
+        let compilerVersion = compiler.versionTuple
+      {
+        if compilerVersion < earliestVersion {
+          return [.earliestRelease, .swiftLatest]
+        } else if compilerVersion < latestVersion {
+          return [compiler, .swiftLatest]
+        } else {
+          return [compiler]
+        }
+      } else if parsedVersion > latestVersion {  // Newer than we know about: pin to the latest known release.
+        return [.swiftLatest]
+      } else if parsedVersion < earliestVersion {  // Too early: raise to the earliest supported release.
+        return [.earliestRelease, .swiftLatest]
+      } else {
+        return [.swiftLatest]
+      }
+    }
 
     /// Converts a compiler ID to a numeric `(major, minor)` pair.
     /// Symbolic IDs return `nil`.
@@ -116,6 +148,7 @@ public final class Compiler: Identifiable, Sendable {
         case .swift61: return (6, 1)
         case .swift62: return (6, 2)
         case .swift63: return (6, 3)
+        case .swift64: return (6, 4)
         case .swiftLatest, .swiftNightly: return nil
       }
     }
@@ -145,6 +178,12 @@ public final class Compiler: Identifiable, Sendable {
     Compiler(
       .swift63, name: "Swift 6.3", short: "6.3", linux: "ubuntu-24.04",
       mac: .xcode(version: "26.4.0", image: "macos-26")),
+
+    Compiler(
+      .swift64, name: "Swift 6.4", short: "6.4", linux: "ubuntu-24.04",
+      // GitHub provides Xcode 27 on its own preview image, not on macos-26.
+      // See https://github.com/actions/runner-images/issues/14404
+      mac: .xcode(version: "27.0.0", image: "xcode-27")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(

@@ -54,15 +54,15 @@ jobs:
       setup-mode: "release"
       operation: "test"
 
-  linux-swift63:
+  linux-swift64:
     needs: generated-workflows-current
-    name: "Linux (Swift 6.3)"
+    name: "Linux (Swift 6.4)"
     uses: ./.github/workflows/EndToEndSwiftJob.yml
     with:
       platform: "linux"
       runner: "ubuntu-24.04"
-      swift-version: "6.3"
-      compiler-id: "swift63"
+      swift-version: "6.4"
+      compiler-id: "swift64"
       setup-mode: "release"
       operation: "test"
 
@@ -80,17 +80,17 @@ jobs:
       setup-mode: "xcode-release"
       operation: "test"
 
-  iOS-swift63:
+  iOS-swift64:
     needs: generated-workflows-current
-    name: "iOS (Swift 6.3, Xcode matching Swift 6.3)"
+    name: "iOS (Swift 6.4, Xcode matching Swift 6.4)"
     uses: ./.github/workflows/EndToEndXcodeJob.yml
     with:
       package: "ActionBuilderEndToEnd"
       platform: "iOS"
-      runner: "macos-26"
-      swift-version: "6.3"
-      compiler-id: "swift63"
-      preferred-xcode-version: "26.4"
+      runner: "xcode-27"
+      swift-version: "6.4"
+      compiler-id: "swift64"
+      preferred-xcode-version: "27.0"
       setup-mode: "xcode-release"
       operation: "test"
 
@@ -106,15 +106,15 @@ jobs:
       setup-mode: "release"
       operation: "test"
 
-  macOS-swift63:
+  macOS-swift64:
     needs: generated-workflows-current
-    name: "macOS (Swift 6.3)"
+    name: "macOS (Swift 6.4)"
     uses: ./.github/workflows/EndToEndSwiftJob.yml
     with:
       platform: "macOS"
-      runner: "macos-26"
-      swift-version: "6.3"
-      compiler-id: "swift63"
+      runner: "xcode-27"
+      swift-version: "6.4"
+      compiler-id: "swift64"
       setup-mode: "release"
       operation: "test"
 
@@ -132,17 +132,17 @@ jobs:
       setup-mode: "xcode-release"
       operation: "test"
 
-  tvOS-swift63:
+  tvOS-swift64:
     needs: generated-workflows-current
-    name: "tvOS (Swift 6.3, Xcode matching Swift 6.3)"
+    name: "tvOS (Swift 6.4, Xcode matching Swift 6.4)"
     uses: ./.github/workflows/EndToEndXcodeJob.yml
     with:
       package: "ActionBuilderEndToEnd"
       platform: "tvOS"
-      runner: "macos-26"
-      swift-version: "6.3"
-      compiler-id: "swift63"
-      preferred-xcode-version: "26.4"
+      runner: "xcode-27"
+      swift-version: "6.4"
+      compiler-id: "swift64"
+      preferred-xcode-version: "27.0"
       setup-mode: "xcode-release"
       operation: "test"
 
@@ -160,16 +160,16 @@ jobs:
       setup-mode: "xcode-release"
       operation: "build"
 
-  watchOS-swift63:
+  watchOS-swift64:
     needs: generated-workflows-current
-    name: "watchOS (Swift 6.3, Xcode matching Swift 6.3)"
+    name: "watchOS (Swift 6.4, Xcode matching Swift 6.4)"
     uses: ./.github/workflows/EndToEndXcodeJob.yml
     with:
       package: "ActionBuilderEndToEnd"
       platform: "watchOS"
-      runner: "macos-26"
-      swift-version: "6.3"
-      compiler-id: "swift63"
-      preferred-xcode-version: "26.4"
+      runner: "xcode-27"
+      swift-version: "6.4"
+      compiler-id: "swift64"
+      preferred-xcode-version: "27.0"
       setup-mode: "xcode-release"
       operation: "build"

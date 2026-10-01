@@ -97,6 +97,7 @@ public struct Repo: Equatable, Sendable {
   }
 
   /// Compilers requested in settings, including symbolic and legacy compatibility handling.
+  /// `Compiler.compilers` is declared oldest to newest, so filtering it keeps that order.
   var enabledCompilers: [Compiler] {
     var enabledIDs = self.compilers
     let legacyIDs: Set<Compiler.ID> = [.swift57, .swift58, .swift59]
@@ -110,11 +111,7 @@ public struct Repo: Equatable, Sendable {
       enabledIDs.insert(.latestRelease)
     }
 
-    let sorted = Compiler.compilers
-      .filter { enabledIDs.contains($0.id) }
-      .sorted { $0.id < $1.id }
-
-    return sorted
+    return Compiler.compilers.filter { enabledIDs.contains($0.id) }
   }
 
   /// Configurations requested in settings, in stable sorted order.
