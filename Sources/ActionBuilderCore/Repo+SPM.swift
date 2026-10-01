@@ -42,26 +42,7 @@ extension Repo {
 
     // Derive compilers only when no explicit compiler settings were provided.
     if repo.enabledCompilers.isEmpty {
-      let version = SemanticVersion(package.toolsVersion)
-      let parsedVersion = (version.major, version.minor)
-      let earliestVersion = Compiler.ID.earliestRelease.versionTuple ?? parsedVersion
-      let latestVersion = Compiler.ID.latestRelease.versionTuple ?? parsedVersion
-      let swiftVersion = "swift\(version.major)\(version.minor)"
-      if !(version.isInvalid || version.isUnknown), let compiler = Compiler.ID(rawValue: swiftVersion), let compilerVersion = compiler.versionTuple {
-        if compilerVersion < earliestVersion {
-          repo.compilers = [.earliestRelease, .swiftLatest]
-        } else if compilerVersion < latestVersion {
-          repo.compilers = [compiler, .swiftLatest]
-        } else {
-          repo.compilers = [compiler]
-        }
-      } else if parsedVersion > latestVersion {  // If the Swift version is newer than we know about, pin to latest known release.
-        repo.compilers = [.swiftLatest]
-      } else if parsedVersion < earliestVersion {  // If the Swift version is too early, raise to the earliest supported release.
-        repo.compilers = [.earliestRelease, .swiftLatest]
-      } else {
-        repo.compilers = [.swiftLatest]
-      }
+      repo.compilers = Compiler.ID.derived(fromToolsVersion: package.toolsVersion)
     }
 
     // Resolve auto test mode from whether test targets exist.

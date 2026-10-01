@@ -4,6 +4,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 import Foundation
+import SemanticVersion
 
 /// Describes a Swift toolchain target and how to run it on GitHub Actions.
 public final class Compiler: Identifiable, Sendable {
@@ -106,6 +107,35 @@ public final class Compiler: Identifiable, Sendable {
     /// Actual ID of the latest fullrelease we know about.
     static let latestRelease = Self.swift64
 
+    /// The compilers to test when a package doesn't say, derived from its `swift-tools-version`.
+    ///
+    /// A version we know tests that compiler and the latest release. One older than the earliest
+    /// supported release is raised to it, and one newer than the latest is pinned to the latest.
+    static func derived(fromToolsVersion toolsVersion: String) -> Set<ID> {
+      let version = SemanticVersion(toolsVersion)
+      let parsedVersion = (version.major, version.minor)
+      let earliestVersion = earliestRelease.versionTuple ?? parsedVersion
+      let latestVersion = latestRelease.versionTuple ?? parsedVersion
+      let swiftVersion = "swift\(version.major)\(version.minor)"
+      if !(version.isInvalid || version.isUnknown), let compiler = ID(rawValue: swiftVersion),
+        let compilerVersion = compiler.versionTuple
+      {
+        if compilerVersion < earliestVersion {
+          return [.earliestRelease, .swiftLatest]
+        } else if compilerVersion < latestVersion {
+          return [compiler, .swiftLatest]
+        } else {
+          return [compiler]
+        }
+      } else if parsedVersion > latestVersion {  // Newer than we know about: pin to the latest known release.
+        return [.swiftLatest]
+      } else if parsedVersion < earliestVersion {  // Too early: raise to the earliest supported release.
+        return [.earliestRelease, .swiftLatest]
+      } else {
+        return [.swiftLatest]
+      }
+    }
+
     /// Converts a compiler ID to a numeric `(major, minor)` pair.
     /// Symbolic IDs return `nil`.
     var versionTuple: (Int, Int)? {
@@ -151,7 +181,9 @@ public final class Compiler: Identifiable, Sendable {
 
     Compiler(
       .swift64, name: "Swift 6.4", short: "6.4", linux: "ubuntu-24.04",
-      mac: .xcode(version: "27.0.0", image: "macos-26")),
+      // GitHub provides Xcode 27 on its own preview image, not on macos-26.
+      // See https://github.com/actions/runner-images/issues/14404
+      mac: .xcode(version: "27.0.0", image: "xcode-27")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(

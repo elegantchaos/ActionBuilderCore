@@ -87,7 +87,7 @@ jobs:
     with:
       package: "ActionBuilderEndToEnd"
       platform: "iOS"
-      runner: "macos-26"
+      runner: "xcode-27"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"
@@ -112,7 +112,7 @@ jobs:
     uses: ./.github/workflows/EndToEndSwiftJob.yml
     with:
       platform: "macOS"
-      runner: "macos-26"
+      runner: "xcode-27"
       swift-version: "6.4"
       compiler-id: "swift64"
       setup-mode: "release"
@@ -139,7 +139,7 @@ jobs:
     with:
       package: "ActionBuilderEndToEnd"
       platform: "tvOS"
-      runner: "macos-26"
+      runner: "xcode-27"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"
@@ -167,7 +167,7 @@ jobs:
     with:
       package: "ActionBuilderEndToEnd"
       platform: "watchOS"
-      runner: "macos-26"
+      runner: "xcode-27"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"

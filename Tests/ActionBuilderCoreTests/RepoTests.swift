@@ -72,20 +72,36 @@ struct RepoTests {
     #expect(repo.testFrameworks == [.swiftTesting])
   }
 
-  /// A package at the newest tools version pins to that exact compiler.
+  /// The newest tools version pins to that exact compiler.
   @Test
-  func latestToolsVersionPinsItsCompiler() async throws {
-    let examplePackage = try #require(
-      Bundle.module.url(forResource: "Example-latest", withExtension: "package"))
-    let repo = try await Repo(forPackage: examplePackage)
-
-    #expect(repo.compilers == [.swift64])
+  func latestToolsVersionPinsItsCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.4") == [.swift64])
     #expect(Compiler.ID.latestRelease == .swift64)
   }
 
-  /// Swift 6.4 builds with Xcode 27.0 on the macOS 26 runner image.
+  /// An older known tools version tests that compiler and the latest.
   @Test
-  func swift64UsesXcode27OnMacOS26() throws {
+  func olderToolsVersionTestsItAndTheLatest() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.3") == [.swift63, .swiftLatest])
+    #expect(Compiler.ID.derived(fromToolsVersion: "6.0") == [.swift60, .swiftLatest])
+  }
+
+  /// Tools versions older than the earliest supported compiler raise to it.
+  @Test
+  func ancientToolsVersionRaisesToTheEarliestCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "5.6") == [.earliestRelease, .swiftLatest])
+  }
+
+  /// Tools versions newer than any known compiler pin to the latest.
+  @Test
+  func futureToolsVersionPinsToTheLatestCompiler() {
+    #expect(Compiler.ID.derived(fromToolsVersion: "99.0") == [.swiftLatest])
+  }
+
+  /// Swift 6.4 builds with Xcode 27.0, which GitHub provides on its own `xcode-27` runner image.
+  /// The `macos-26` image has no Xcode 27.
+  @Test
+  func swift64UsesXcode27OnItsOwnRunnerImage() throws {
     let compiler = try #require(Compiler.compilers.first { $0.id == .swift64 })
 
     #expect(compiler.name == "Swift 6.4")
@@ -95,7 +111,7 @@ struct RepoTests {
       return
     }
     #expect(version == "27.0.0")
-    #expect(image == "macos-26")
+    #expect(image == "xcode-27")
   }
 
   /// Legacy compiler identifiers collapse to the earliest supported compiler.
