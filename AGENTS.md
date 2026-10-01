@@ -5,7 +5,8 @@
 - Generated workflow YAML is formatting- and order-sensitive; avoid incidental output changes and update exact-output expectations in `Tests/ActionBuilderCoreTests` whenever generated workflow text changes.
 - Prefer maintained GitHub Actions setup actions over custom shell installation steps when they provide equivalent behavior.
 - Keep generated workflow output deterministic and make changes to external action references deliberate.
-- Before creating a pull request or GitHub release, run `Extras/Scripts/refresh-endtoend.sh` and include any regenerated EndToEnd workflow changes.
+- Before creating a pull request, run `Extras/Scripts/refresh-endtoend.sh` and include any regenerated EndToEnd workflow changes.
+- A release needs a second refresh, after the tag exists. The generated workflows are stamped with the tool version, which comes from the latest git tag when the tool is built, so tagging a release makes the committed workflows stale: CI regenerates them with the new tag and the "Generated workflows are current" check fails on `main`. Create the release tag first, then run the script again (it rebuilds the tool) and commit the result through a pull request. A refresh run before the tag is clean and proves nothing about the release.
 
 ## Standard Rules
 
