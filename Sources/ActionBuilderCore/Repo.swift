@@ -110,11 +110,9 @@ public struct Repo: Equatable, Sendable {
       enabledIDs.insert(.latestRelease)
     }
 
-    let sorted = Compiler.compilers
-      .filter { enabledIDs.contains($0.id) }
-      .sorted { $0.id < $1.id }
-
-    return sorted
+    // `Compiler.compilers` is declared oldest to newest, so filtering it keeps that order. Don't
+    // re-sort: the order of generated jobs must not depend on how `enabledIDs` iterates.
+    return Compiler.compilers.filter { enabledIDs.contains($0.id) }
   }
 
   /// Configurations requested in settings, in stable sorted order.

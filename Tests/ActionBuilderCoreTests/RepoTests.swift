@@ -114,6 +114,22 @@ struct RepoTests {
     #expect(image == "xcode-27")
   }
 
+  /// Enabled compilers come out oldest to newest, however the set of IDs happens to iterate, so the
+  /// jobs in generated workflows are in a stable order.
+  @Test
+  func enabledCompilersAreOrderedOldestToNewest() {
+    let repo = Repo(
+      name: "testRepo",
+      owner: "testOwner",
+      platforms: [.macOS],
+      compilers: [.swiftNightly, .swift64, .swift510, .swift62, .swift60],
+      firstlast: false
+    )
+
+    #expect(
+      repo.enabledCompilers.map(\.id) == [.swift510, .swift60, .swift62, .swift64, .swiftNightly])
+  }
+
   /// Legacy compiler identifiers collapse to the earliest supported compiler.
   @Test
   func legacyCompilerIdentifiersMapToEarliestCompiler() {
