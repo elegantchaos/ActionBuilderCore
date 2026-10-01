@@ -6,7 +6,7 @@
 - Prefer maintained GitHub Actions setup actions over custom shell installation steps when they provide equivalent behavior.
 - Keep generated workflow output deterministic and make changes to external action references deliberate.
 - Before creating a pull request, run `Extras/Scripts/refresh-endtoend.sh` and include any regenerated EndToEnd workflow changes, because the pull request's own CI checks them.
-- After tagging a release, run the script and commit the result straight to `main`. The generated workflows are stamped with the tool version, which comes from the latest git tag when the tool is built, so tagging makes them stale and the "Generated workflows are current" check fails on `main`. They only drive CI and are not part of the built tool, so the release itself is unaffected and nothing needs refreshing before the tag. A refresh run before the tag is clean and proves nothing about the release.
+- The generated EndToEnd workflows carry a fixed artificial stamp (`ActionBuilderTool 0.0.0.`) in place of the real version and build number, so tagging a release or committing a refresh does not make them stale and a release needs no refresh. A stamp that is missing or has no version still fails the freshness check.
 
 ## Standard Rules
 
