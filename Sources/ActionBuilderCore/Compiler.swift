@@ -91,6 +91,8 @@ public final class Compiler: Identifiable, Sendable {
     case swift62
     /// Swift 6.3.
     case swift63
+    /// Swift 6.4.
+    case swift64
 
     /// symbolic ID which indicates the latest Swift version.
     case swiftLatest
@@ -102,7 +104,7 @@ public final class Compiler: Identifiable, Sendable {
     static let earliestRelease = Self.swift510
 
     /// Actual ID of the latest fullrelease we know about.
-    static let latestRelease = Self.swift63
+    static let latestRelease = Self.swift64
 
     /// Converts a compiler ID to a numeric `(major, minor)` pair.
     /// Symbolic IDs return `nil`.
@@ -116,6 +118,7 @@ public final class Compiler: Identifiable, Sendable {
         case .swift61: return (6, 1)
         case .swift62: return (6, 2)
         case .swift63: return (6, 3)
+        case .swift64: return (6, 4)
         case .swiftLatest, .swiftNightly: return nil
       }
     }
@@ -145,6 +148,10 @@ public final class Compiler: Identifiable, Sendable {
     Compiler(
       .swift63, name: "Swift 6.3", short: "6.3", linux: "ubuntu-24.04",
       mac: .xcode(version: "26.4.0", image: "macos-26")),
+
+    Compiler(
+      .swift64, name: "Swift 6.4", short: "6.4", linux: "ubuntu-24.04",
+      mac: .xcode(version: "27.0.0", image: "macos-26")),
 
     // https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a/swift-DEVELOPMENT-SNAPSHOT-2022-03-22-a-osx.pkg
     Compiler(

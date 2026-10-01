@@ -72,6 +72,32 @@ struct RepoTests {
     #expect(repo.testFrameworks == [.swiftTesting])
   }
 
+  /// A package at the newest tools version pins to that exact compiler.
+  @Test
+  func latestToolsVersionPinsItsCompiler() async throws {
+    let examplePackage = try #require(
+      Bundle.module.url(forResource: "Example-latest", withExtension: "package"))
+    let repo = try await Repo(forPackage: examplePackage)
+
+    #expect(repo.compilers == [.swift64])
+    #expect(Compiler.ID.latestRelease == .swift64)
+  }
+
+  /// Swift 6.4 builds with Xcode 27.0 on the macOS 26 runner image.
+  @Test
+  func swift64UsesXcode27OnMacOS26() throws {
+    let compiler = try #require(Compiler.compilers.first { $0.id == .swift64 })
+
+    #expect(compiler.name == "Swift 6.4")
+    #expect(compiler.short == "6.4")
+    guard case .xcode(let version, let image) = compiler.mac else {
+      Issue.record("Expected Swift 6.4 to select an Xcode version.")
+      return
+    }
+    #expect(version == "27.0.0")
+    #expect(image == "macos-26")
+  }
+
   /// Legacy compiler identifiers collapse to the earliest supported compiler.
   @Test
   func legacyCompilerIdentifiersMapToEarliestCompiler() {
