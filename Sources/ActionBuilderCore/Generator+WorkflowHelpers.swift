@@ -266,9 +266,9 @@ extension Generator {
                 REQUESTED_SWIFT: ${{ inputs.swift-version }}
                 PREFERRED_XCODE: ${{ inputs.preferred-xcode-version }}
               run: |
-                ls -d /Applications/Xcode* > logs/xcode-versions.log
+                printf '%s\\n' /Applications/Xcode*.app > logs/xcode-versions.log
                 FOUND_XCODE=""
-                while read -r APP
+                while IFS= read -r APP
                 do
                   DEV_DIR="$APP/Contents/Developer"
                   SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
@@ -285,19 +285,19 @@ extension Generator {
                       break
                     fi
                   fi
-                done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+                done < <(sort -Vr logs/xcode-versions.log)
 
                 if [[ -z "$FOUND_XCODE" ]]
                 then
                   echo "::error::No installed Xcode matched Swift $REQUESTED_SWIFT."
                   echo "Detected toolchains:"
-                  while read -r APP
+                  while IFS= read -r APP
                   do
                     DEV_DIR="$APP/Contents/Developer"
                     XCODE_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcodebuild -version 2>/dev/null | awk '/^Xcode / {print $2; exit}')
                     SWIFT_VERSION=$(DEVELOPER_DIR="$DEV_DIR" xcrun swift --version 2>/dev/null | head -n 1 | sed -E 's/.*version ([0-9]+\\.[0-9]+).*/\\1/')
                     echo "  Xcode $XCODE_VERSION -> Swift $SWIFT_VERSION"
-                  done < <(ls -d /Applications/Xcode*.app | sort -Vr)
+                  done < <(sort -Vr logs/xcode-versions.log)
                   exit 1
                 fi
 
@@ -340,7 +340,7 @@ extension Generator {
                 ln -s "/Library/Developer/Toolchains/$downloadYML.xctoolchain/usr/bin" swift-latest
                 echo "$PWD/swift-latest" >> "$GITHUB_PATH"
                 echo "TOOLCHAINS=swift" >> "$GITHUB_ENV"
-                ls -d /Applications/Xcode* > logs/xcode-versions.log
+                printf '%s\\n' /Applications/Xcode*.app > logs/xcode-versions.log
                 swift --version
             - name: Snapshot Xcode Version
               if: ${{ inputs.setup-mode == 'xcode-toolchain' }}
@@ -509,8 +509,13 @@ extension Generator {
                 if [[ ! -e "$WORKSPACE" ]]
                 then
                   WORKSPACE="."
-                  GOT_PACKAGE=$(xcodebuild -workspace . -list | (grep "$PACKAGE-Package" || true))
-                  if [[ -n "$GOT_PACKAGE" ]]
+                  if ! xcodebuild -workspace . -list > logs/schemes.log 2>&1
+                  then
+                    echo "::error::Unable to list package schemes."
+                    cat logs/schemes.log
+                    exit 1
+                  fi
+                  if grep -Fq "$PACKAGE-Package" logs/schemes.log
                   then
                     SCHEME="$PACKAGE-Package"
                   else
@@ -557,21 +562,22 @@ extension Generator {
 
                 echo "available=false" >> "$GITHUB_OUTPUT"
 
-                mark_destination_unavailable() {
+                fail_destination() {
                   local message="$1"
                   local log="${2:-}"
-                  echo "::warning::$message"
+                  echo "::error::$message"
                   if [[ -n "$log" && -f "$log" ]]
                   then
                     cat "$log"
                   fi
                   {
-                    echo "### $PLATFORM simulator unavailable"
+                    echo "### $PLATFORM validation failed"
                     echo ""
                     echo "$message"
                     echo ""
-                    echo "Build/test steps for this job were skipped because the simulator destination could not be prepared."
+                    echo "The required simulator destination could not be prepared."
                   } >> "$GITHUB_STEP_SUMMARY"
+                  exit 1
                 }
 
                 load_best_destination() {
@@ -607,15 +613,13 @@ extension Generator {
 
                 if ! xcrun simctl list > "logs/simctl-list-$PLATFORM.log" 2>&1
                 then
-                  mark_destination_unavailable "Unable to connect to CoreSimulator while preparing $PLATFORM." "logs/simctl-list-$PLATFORM.log"
-                  exit 0
+                  fail_destination "Unable to connect to CoreSimulator while preparing $PLATFORM." "logs/simctl-list-$PLATFORM.log"
                 fi
 
                 DESTINATIONS_LOG="logs/destinations-$PLATFORM.log"
                 if ! xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > "$DESTINATIONS_LOG" 2>&1
                 then
-                  mark_destination_unavailable "Unable to list $PLATFORM simulator destinations." "$DESTINATIONS_LOG"
-                  exit 0
+                  fail_destination "Unable to list $PLATFORM simulator destinations." "$DESTINATIONS_LOG"
                 fi
 
                 if ! load_best_destination "$DESTINATIONS_LOG"
@@ -623,26 +627,22 @@ extension Generator {
                   echo "No available $PLATFORM simulator destination found. Downloading platform support."
                   if ! xcodebuild -downloadPlatform "$PLATFORM" > "logs/download-$PLATFORM.log" 2>&1
                   then
-                    mark_destination_unavailable "Unable to download $PLATFORM platform support." "logs/download-$PLATFORM.log"
-                    exit 0
+                    fail_destination "Unable to download $PLATFORM platform support." "logs/download-$PLATFORM.log"
                   fi
                   if ! xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showdestinations > "$DESTINATIONS_LOG" 2>&1
                   then
-                    mark_destination_unavailable "Unable to list $PLATFORM simulator destinations after downloading platform support." "$DESTINATIONS_LOG"
-                    exit 0
+                    fail_destination "Unable to list $PLATFORM simulator destinations after downloading platform support." "$DESTINATIONS_LOG"
                   fi
                   if ! load_best_destination "$DESTINATIONS_LOG"
                   then
-                    mark_destination_unavailable "$FAILURE_MESSAGE" "$DESTINATIONS_LOG"
-                    exit 0
+                    fail_destination "$FAILURE_MESSAGE" "$DESTINATIONS_LOG"
                   fi
                 fi
 
                 echo "Selected $PLATFORM simulator: ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
                 if ! boot_destination
                 then
-                  mark_destination_unavailable "Failed to boot $PLATFORM simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})." "logs/boot-$PLATFORM.log"
-                  exit 0
+                  fail_destination "Failed to boot $PLATFORM simulator ${DESTINATION_NAME:-unknown} (OS ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})." "logs/boot-$PLATFORM.log"
                 fi
 
                 {

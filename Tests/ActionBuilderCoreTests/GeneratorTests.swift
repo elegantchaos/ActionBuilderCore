@@ -3,6 +3,7 @@
 //  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+import Foundation
 import Testing
 
 @testable import ActionBuilderCore
@@ -410,6 +411,40 @@ struct GeneratorTests {
     #expect(caller.contains("setup-mode: \"development\""))
     #expect(caller.contains("setup-mode: \"xcode-toolchain\""))
     #expect(caller.contains("toolchain-branch: \"development\""))
+  }
+
+  /// The complete Xcode helper preserves the reviewed shell code and YAML ordering.
+  @Test
+  func xcodeHelperMatchesExpectedOutput() throws {
+    let repo = Repo(name: "Logger", owner: "elegantchaos", platforms: [.iOS], compilers: [.swift62])
+    let expectedURL = try #require(Bundle.module.url(forResource: "ExpectedXcodeJob", withExtension: "yml"))
+    let expected = try String(contentsOf: expectedURL, encoding: .utf8)
+    #expect(try workflow(named: "ActionBuilderXcodeJob.yml", for: repo) == expected)
+  }
+
+  /// Executes generated setup scripts against mocked Xcode failures and simulator states.
+  @Test
+  func xcodeSetupShellRegressions() throws {
+    let repo = Repo(name: "Logger", owner: "elegantchaos", platforms: [.iOS], compilers: [.swift62])
+    let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let workflowURL = directory.appending(path: "XcodeJob.yml")
+    try workflow(named: "ActionBuilderXcodeJob.yml", for: repo).write(to: workflowURL, atomically: true, encoding: .utf8)
+    let script = try #require(Bundle.module.url(forResource: "workflow-regressions", withExtension: "sh"))
+    let outputURL = directory.appending(path: "results.log")
+    try Data().write(to: outputURL)
+    let output = try FileHandle(forWritingTo: outputURL)
+    defer { try? output.close() }
+    let process = Process()
+    process.executableURL = URL(filePath: "/bin/bash")
+    process.arguments = [script.path, workflowURL.path]
+    process.standardOutput = output
+    process.standardError = output
+    try process.run()
+    process.waitUntilExit()
+    let results = try String(contentsOf: outputURL, encoding: .utf8)
+    #expect(process.terminationStatus == 0, "\(results)")
   }
 
   /// Returns generated contents for a workflow filename.
