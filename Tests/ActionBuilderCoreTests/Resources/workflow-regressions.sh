@@ -23,6 +23,7 @@ extract_step 'Resolve Xcode Version' "$scratch/resolve.sh"
 # Simulates CoreSimulator discovery and booting, including already-booted devices.
 xcrun() {
   local selected_scenario="${SCENARIO:?}"
+  [[ "$selected_scenario" != build_* ]] || return 99
   case "$*" in
     'swift --version')
       [[ "$DEVELOPER_DIR" == *'/Xcode 26 Beta.app/Contents/Developer' ]] || return 99
@@ -44,6 +45,7 @@ xcrun() {
 # Simulates destination discovery and platform downloads without invoking Xcode.
 xcodebuild() {
   local selected_scenario="${SCENARIO:?}"
+  [[ "$selected_scenario" != build_* ]] || return 99
   local selected_platform="${PLATFORM:?}"
   case "$*" in
     -version)
@@ -93,9 +95,12 @@ check_selection() {
   local expected="$2"
   local directory="$scratch/$scenario"
   local platform=iOS
+  local operation=test
+  local expected_destination=id=device-123
   local actual
   mkdir -p "$directory/logs"
   case "$scenario" in
+    build_*) platform="${scenario#build_}"; operation=build; expected_destination="destination=generic/platform=$platform Simulator" ;;
     unsupported_platform) platform=unsupported ;;
     success_tvOS) platform=tvOS ;;
     success_watchOS) platform=watchOS ;;
@@ -104,7 +109,7 @@ check_selection() {
 
   if (
     cd "$directory"
-    SCENARIO="$scenario" PLATFORM="$platform" WORKSPACE=. SCHEME=Logger-Package \
+    SCENARIO="$scenario" PLATFORM="$platform" OPERATION="$operation" WORKSPACE=. SCHEME=Logger-Package \
       GITHUB_OUTPUT="$directory/outputs" GITHUB_STEP_SUMMARY="$directory/summary" \
       bash -e "$scratch/select.sh" > "$directory/run.log" 2>&1
   ); then
@@ -115,7 +120,7 @@ check_selection() {
 
   if [[ "$expected" == success && "$actual" == 0 ]] &&
     grep -Fxq 'available=true' "$directory/outputs" &&
-    grep -Fxq 'id=device-123' "$directory/outputs"; then
+    grep -Fxq "$expected_destination" "$directory/outputs"; then
     echo "PASS $scenario"
   elif [[ "$expected" == failure && "$actual" != 0 ]] &&
     ! grep -Fxq 'available=true' "$directory/outputs" 2>/dev/null; then
@@ -182,6 +187,10 @@ check_schemes scheme_success success
 check_schemes scheme_failure failure
 check_schemes scheme_failure_with_match failure
 check_schemes scheme_fallback success
+check_selection build_iOS success
+check_selection build_tvOS success
+check_selection build_watchOS success
+check_selection build_visionOS success
 check_selection success success
 check_selection success_tvOS success
 check_selection success_watchOS success
