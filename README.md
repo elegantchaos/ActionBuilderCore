@@ -61,6 +61,9 @@ The tool writes three files into `.github/workflows`:
 - `ActionBuilderSwiftJob.yml` for Swift Package Manager jobs on macOS and Linux
 - `ActionBuilderXcodeJob.yml` for simulator-backed Xcode jobs
 
+Xcode build jobs use a generic simulator destination without selecting or booting a device.
+Xcode test jobs select and boot an available simulator before running tests.
+
 Test-target source imports are inspected when these files are generated. On supported Swift
 versions, the Swift helper emits XCTest and Swift Testing commands only for the frameworks the
 package actually uses; older compilers and unrecognized test infrastructure use one combined

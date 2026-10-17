@@ -532,6 +532,7 @@ extension Generator {
               id: select-destination
               env:
                 PLATFORM: ${{ inputs.platform }}
+                OPERATION: ${{ inputs.operation }}
               run: |
                 case "$PLATFORM" in
                   iOS)
@@ -559,6 +560,16 @@ extension Generator {
                     exit 1
                     ;;
                 esac
+
+                if [[ "$OPERATION" == "build" ]]
+                then
+                  {
+                    echo "available=true"
+                    echo "destination=generic/platform=$SIMULATOR_PLATFORM"
+                    echo "name=Any $SIMULATOR_PLATFORM Device"
+                  } >> "$GITHUB_OUTPUT"
+                  exit 0
+                fi
 
                 echo "available=false" >> "$GITHUB_OUTPUT"
 
@@ -647,6 +658,7 @@ extension Generator {
 
                 {
                   echo "available=true"
+                  echo "destination=id=$DESTINATION_ID"
                   echo "id=$DESTINATION_ID"
                   echo "name=$DESTINATION_NAME"
                   echo "os=$DESTINATION_OS"
@@ -666,7 +678,7 @@ extension Generator {
               - name: ${{ inputs.operation == 'test' && 'Test' || 'Build' }} (${{ inputs.platform }} \(configuration.name))
                 if: ${{ steps.select-destination.outputs.available == 'true' }}
                 env:
-                  DESTINATION_ID: ${{ steps.select-destination.outputs.id }}
+                  DESTINATION: ${{ steps.select-destination.outputs.destination }}
                   DESTINATION_NAME: ${{ steps.select-destination.outputs.name }}
                   DESTINATION_OS: ${{ steps.select-destination.outputs.os }}
                   OPERATION: ${{ inputs.operation }}
@@ -681,8 +693,8 @@ extension Generator {
                     ACTION=(clean build)
                     VERB="Building"
                   fi
-                  echo "$VERB workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} ($PLATFORM ${DESTINATION_OS:-unknown}, id=${DESTINATION_ID:-unknown})."
-                  xcodebuild "${ACTION[@]}" -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "id=$DESTINATION_ID" -configuration \(xcodeConfiguration) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO\(extraArguments) | tee "logs/xcodebuild-$PLATFORM-$OPERATION-\(rawConfiguration).log" | xcbeautify --quiet --disable-logging --renderer github-actions
+                  echo "$VERB workspace $WORKSPACE scheme $SCHEME on ${DESTINATION_NAME:-unknown} ($PLATFORM ${DESTINATION_OS:-unknown}, destination=${DESTINATION:-unknown})."
+                  xcodebuild "${ACTION[@]}" -workspace "$WORKSPACE" -scheme "$SCHEME" -destination "$DESTINATION" -configuration \(xcodeConfiguration) CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO\(extraArguments) | tee "logs/xcodebuild-$PLATFORM-$OPERATION-\(rawConfiguration).log" | xcbeautify --quiet --disable-logging --renderer github-actions
       """
   }
 
