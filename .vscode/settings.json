@@ -13,6 +13,6 @@
   "explorer.excludeGitIgnore": true,
   "chat.tools.terminal.autoApprove": {
     "swift": true,
-    ".build/debug/ActionBuilderTool": true
+    ".build/debug/swift-ci": true
   }
 }

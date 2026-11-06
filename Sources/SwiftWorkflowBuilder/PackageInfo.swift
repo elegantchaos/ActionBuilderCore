@@ -38,7 +38,7 @@ struct PackageInfo: Decodable {
       let path =
         url
         .appendingPathComponent(".build", isDirectory: true)
-        .appendingPathComponent("actionbuildercore-swiftpm-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("swiftworkflowbuilder-swiftpm-\(UUID().uuidString)", isDirectory: true)
       try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
       scratchPath = path
     } else {

@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@testable import ActionBuilderCore
+@testable import SwiftWorkflowBuilder
 
 /// Tests repository configuration inferred from package metadata and settings.
 struct RepoTests {
@@ -60,7 +60,7 @@ struct RepoTests {
     #expect(repo.firstlast == false)
   }
 
-  /// Future tools versions collapse to the latest compiler known by ActionBuilder.
+  /// Future tools versions collapse to the latest compiler known by SwiftWorkflowBuilder.
   @Test
   func futureToolsVersionMapsToLatestCompiler() async throws {
     let examplePackage = try #require(

@@ -8,7 +8,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "ActionBuilderCore",
+  name: "SwiftWorkflowBuilder",
 
   platforms: [
     .macOS(.v26)
@@ -16,14 +16,14 @@ let package = Package(
 
   products: [
     .library(
-      name: "ActionBuilderCore",
-      targets: ["ActionBuilderCore"]
+      name: "SwiftWorkflowBuilder",
+      targets: ["SwiftWorkflowBuilder"]
     ),
 
     .executable(
-      name: "ActionBuilderTool",
+      name: "swift-ci",
       targets: [
-        "ActionBuilderTool"
+        "SwiftCI"
       ]
     ),
 
@@ -37,7 +37,7 @@ let package = Package(
 
   targets: [
     .target(
-      name: "ActionBuilderCore",
+      name: "SwiftWorkflowBuilder",
 
       dependencies: [
         "Runner",
@@ -46,9 +46,9 @@ let package = Package(
     ),
 
     .executableTarget(
-      name: "ActionBuilderTool",
+      name: "SwiftCI",
       dependencies: [
-        "ActionBuilderCore"
+        "SwiftWorkflowBuilder"
       ],
       plugins: [
         .plugin(name: "VersionatorPlugin", package: "Versionator")
@@ -56,10 +56,10 @@ let package = Package(
     ),
 
     .testTarget(
-      name: "ActionBuilderCoreTests",
+      name: "SwiftWorkflowBuilderTests",
 
       dependencies: [
-        "ActionBuilderCore"
+        "SwiftWorkflowBuilder"
       ],
 
       resources: [

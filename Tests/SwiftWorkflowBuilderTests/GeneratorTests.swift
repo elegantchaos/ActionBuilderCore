@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@testable import ActionBuilderCore
+@testable import SwiftWorkflowBuilder
 
 /// Tests caller and reusable workflow generation.
 struct GeneratorTests {

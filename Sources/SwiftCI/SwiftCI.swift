@@ -3,7 +3,7 @@
 //  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-import ActionBuilderCore
+import SwiftWorkflowBuilder
 import Foundation
 
 #if canImport(AppKit)
@@ -11,7 +11,7 @@ import Foundation
 #endif
 
 /// Command-line entry point that reads package metadata and writes workflow artifacts.
-@main struct ActionBuilderTool {
+@main struct SwiftCI {
   /// Parses command-line options, builds repository settings, then updates workflow/header files.
   static func main() async throws {
     let all = ProcessInfo.processInfo.arguments
