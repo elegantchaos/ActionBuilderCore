@@ -17,7 +17,7 @@ or a refresh commit.
 ## Decision
 
 The EndToEnd refresh script replaces the generated tool version and build number
-with the fixed artificial stamp `ActionBuilderTool 0.0.0.` in all three EndToEnd
+with the fixed artificial stamp `SwiftWorkflowBuilder 0.0.0.` in all three EndToEnd
 workflows before publishing the fixtures.
 
 Normalization requires a version-bearing stamp. Missing or versionless stamps
@@ -47,4 +47,4 @@ retain the real generator metadata.
 - Established by commit `d87e0ba8a60035c11224f994e4864c09cf58e748`.
 - Implemented in [the refresh script](../Scripts/refresh-endtoend.sh).
 - Required by [the project guidance](../../AGENTS.md).
-- Version emission is covered by [GeneratorTests](../../Tests/ActionBuilderCoreTests/GeneratorTests.swift).
+- Version emission is covered by [GeneratorTests](../../Tests/SwiftWorkflowBuilderTests/GeneratorTests.swift).

@@ -8,7 +8,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "ActionBuilderEndToEnd",
+  name: "SwiftWorkflowBuilderEndToEnd",
 
   platforms: [
     .macOS(.v12), .iOS(.v14), .tvOS(.v14), .watchOS(.v9), .custom("Ubuntu", versionString: "20.04"),

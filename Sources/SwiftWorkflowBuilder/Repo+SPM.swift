@@ -10,7 +10,7 @@ import SemanticVersion
 extension Repo {
 
   /// Initialise from an SPM package directory
-  public init(forPackage url: URL, calledFromPlugin: Bool = false) async throws {
+  public init(forPackage url: URL) async throws {
 
     // Try to extract git metadata first so defaults match the remote repository.
     let gitInfo = try? await GitInfo(from: url)
@@ -22,7 +22,7 @@ extension Repo {
     var repo = Self(settings: settings, defaultName: defaultName, defaultOwner: defaultOwner)
 
     // Parse package metadata from `swift package dump-package`.
-    let package = try await PackageInfo(from: url, useIsolatedScratchPath: calledFromPlugin)
+    let package = try await PackageInfo(from: url)
 
     // Derive platforms only when no explicit platform settings were provided.
     if repo.enabledPlatforms.isEmpty {
@@ -54,8 +54,22 @@ extension Repo {
     self = repo
   }
 
-  /// The URL of the actionbuilder settings file for a given package directory.
+  /// Settings filename for a package directory.
+  static let settingsFilename = ".swift-ci.json"
+
+  /// Settings filename used before the tool was renamed; still read when it is the only one present.
+  static let legacySettingsFilename = ".actionbuilder.json"
+
+  /// The URL of the settings file for a given package directory.
+  /// Prefers `.swift-ci.json`, falls back to an existing `.actionbuilder.json`,
+  /// and otherwise names `.swift-ci.json` so new settings use the current name.
   public static func settingsURL(forPackage url: URL) -> URL {
-    return url.appendingPathComponent(".actionbuilder.json")
+    let current = url.appending(path: settingsFilename)
+    let legacy = url.appending(path: legacySettingsFilename)
+    let fileManager = FileManager.default
+    if !fileManager.fileExists(atPath: current.path), fileManager.fileExists(atPath: legacy.path) {
+      return legacy
+    }
+    return current
   }
 }

@@ -1,6 +1,6 @@
 {
   "header": false,
-  "name": "ActionBuilderEndToEnd",
+  "name": "SwiftWorkflowBuilderEndToEnd",
   "uploadLogs": true,
   "workflow": "EndToEndTests"
 }

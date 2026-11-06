@@ -1,6 +1,6 @@
 # Project Specific Rules
 
-- Generated workflow YAML is formatting- and order-sensitive; avoid incidental output changes and update exact-output expectations in `Tests/ActionBuilderCoreTests` whenever generated workflow text changes.
+- Generated workflow YAML is formatting- and order-sensitive; avoid incidental output changes and update exact-output expectations in `Tests/SwiftWorkflowBuilderTests` whenever generated workflow text changes.
 - Prefer maintained GitHub Actions setup actions over custom shell installation steps when they provide equivalent behavior.
 - Keep generated workflow output deterministic and make changes to external action references deliberate.
 - Before creating a pull request, run `Extras/Scripts/refresh-endtoend.sh` and include any regenerated EndToEnd workflow changes, because the pull request's own CI checks them.

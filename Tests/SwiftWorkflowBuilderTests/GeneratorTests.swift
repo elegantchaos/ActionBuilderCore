@@ -30,8 +30,8 @@ struct GeneratorTests {
     #expect(
       generator.workflowFiles(for: repo).map(\.relativePath) == [
         ".github/workflows/Tests.yml",
-        ".github/workflows/ActionBuilderSwiftJob.yml",
-        ".github/workflows/ActionBuilderXcodeJob.yml",
+        ".github/workflows/SwiftWorkflowBuilderSwiftJob.yml",
+        ".github/workflows/SwiftWorkflowBuilderXcodeJob.yml",
       ])
   }
 
@@ -83,8 +83,8 @@ struct GeneratorTests {
       # (see https://test.com for more details)
       #
       # Job implementations:
-      #   .github/workflows/ActionBuilderSwiftJob.yml
-      #   .github/workflows/ActionBuilderXcodeJob.yml
+      #   .github/workflows/SwiftWorkflowBuilderSwiftJob.yml
+      #   .github/workflows/SwiftWorkflowBuilderXcodeJob.yml
       # --------------------------------------------------------------------------------
 
       name: "Tests"
@@ -97,7 +97,7 @@ struct GeneratorTests {
       jobs:
         macOS-swift510:
           name: "macOS (Swift 5.10)"
-          uses: ./.github/workflows/ActionBuilderSwiftJob.yml
+          uses: ./.github/workflows/SwiftWorkflowBuilderSwiftJob.yml
           with:
             platform: "macOS"
             runner: "macos-14"
@@ -121,8 +121,8 @@ struct GeneratorTests {
     )
     let workflow = try workflow(named: "Tests.yml", for: repo)
 
-    #expect(workflow.contains("uses: ./.github/workflows/ActionBuilderSwiftJob.yml"))
-    #expect(workflow.contains("uses: ./.github/workflows/ActionBuilderXcodeJob.yml"))
+    #expect(workflow.contains("uses: ./.github/workflows/SwiftWorkflowBuilderSwiftJob.yml"))
+    #expect(workflow.contains("uses: ./.github/workflows/SwiftWorkflowBuilderXcodeJob.yml"))
     #expect(workflow.contains("platform: \"linux\""))
     #expect(workflow.contains("platform: \"macOS\""))
     #expect(workflow.contains("platform: \"iOS\""))
@@ -140,8 +140,8 @@ struct GeneratorTests {
       compilers: [.swift62]
     )
     let callerWorkflow = try workflow(named: "Tests.yml", for: repo)
-    let swiftWorkflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
-    let xcodeWorkflow = try workflow(named: "ActionBuilderXcodeJob.yml", for: repo)
+    let swiftWorkflow = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
+    let xcodeWorkflow = try workflow(named: "SwiftWorkflowBuilderXcodeJob.yml", for: repo)
     #expect(callerWorkflow.contains("operation-name") == false)
     #expect(swiftWorkflow.contains("operation-name") == false)
     #expect(xcodeWorkflow.contains("operation-name") == false)
@@ -157,7 +157,7 @@ struct GeneratorTests {
       compilers: [.swift62],
       testFrameworks: [.xctest, .swiftTesting]
     )
-    let workflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let workflow = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(workflow.contains("workflow_call:"))
     #expect(workflow.contains("runs-on: ${{ inputs.runner }}"))
@@ -194,7 +194,7 @@ struct GeneratorTests {
       compilers: [.swift62],
       testFrameworks: [.swiftTesting]
     )
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(helper.contains("- name: Test (release Swift Testing)"))
     #expect(helper.contains("- name: Test (release XCTest)") == false)
@@ -216,7 +216,7 @@ struct GeneratorTests {
       compilers: [.swift62],
       testFrameworks: [.xctest]
     )
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(helper.contains("- name: Test (release XCTest)"))
     #expect(helper.contains("- name: Test (release Swift Testing)") == false)
@@ -233,7 +233,7 @@ struct GeneratorTests {
       compilers: [.swift62],
       testFrameworks: [.xctest, .swiftTesting]
     )
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(helper.contains("- name: Test (release XCTest)"))
     #expect(helper.contains("- name: Test (release Swift Testing)"))
@@ -250,7 +250,7 @@ struct GeneratorTests {
       compilers: [.swift510],
       testFrameworks: [.swiftTesting]
     )
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(helper.contains("- name: Test (release)\n"))
     #expect(helper.contains("- name: Test (release XCTest)") == false)
@@ -267,7 +267,7 @@ struct GeneratorTests {
       compilers: [.swift62],
       testFrameworks: []
     )
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(helper.contains("- name: Test (release)\n"))
     #expect(helper.contains("--disable-swift-testing") == false)
@@ -285,7 +285,7 @@ struct GeneratorTests {
       testFrameworks: [.swiftTesting]
     )
     let caller = try workflow(named: "Tests.yml", for: repo)
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(caller.contains("separate-test-methods: false"))
     #expect(caller.contains("separate-test-methods: true"))
@@ -302,7 +302,7 @@ struct GeneratorTests {
       platforms: [.iOS, .tvOS, .watchOS, .visionOS],
       compilers: [.swift510]
     )
-    let workflow = try workflow(named: "ActionBuilderXcodeJob.yml", for: repo)
+    let workflow = try workflow(named: "SwiftWorkflowBuilderXcodeJob.yml", for: repo)
 
     #expect(workflow.contains("case \"$PLATFORM\" in"))
     #expect(workflow.contains("SIMULATOR_PLATFORM=\"iOS Simulator\""))
@@ -366,8 +366,8 @@ struct GeneratorTests {
       compilers: [.swift62],
       configurations: [.debug, .release]
     )
-    let swiftWorkflow = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
-    let xcodeWorkflow = try workflow(named: "ActionBuilderXcodeJob.yml", for: repo)
+    let swiftWorkflow = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
+    let xcodeWorkflow = try workflow(named: "SwiftWorkflowBuilderXcodeJob.yml", for: repo)
 
     #expect(swiftWorkflow.contains("Build (debug)"))
     #expect(swiftWorkflow.contains("Build (release)"))
@@ -392,7 +392,7 @@ struct GeneratorTests {
       postSlackNotification: true
     )
     let caller = try workflow(named: "Tests.yml", for: repo)
-    let helper = try workflow(named: "ActionBuilderSwiftJob.yml", for: repo)
+    let helper = try workflow(named: "SwiftWorkflowBuilderSwiftJob.yml", for: repo)
 
     #expect(caller.contains("secrets: inherit"))
     #expect(caller.contains("notification-job-name: \"Linux (Swift 6.2)\""))
@@ -422,7 +422,7 @@ struct GeneratorTests {
     let repo = Repo(name: "Logger", owner: "elegantchaos", platforms: [.iOS], compilers: [.swift62])
     let expectedURL = try #require(Bundle.module.url(forResource: "ExpectedXcodeJob", withExtension: "yml"))
     let expected = try String(contentsOf: expectedURL, encoding: .utf8)
-    #expect(try workflow(named: "ActionBuilderXcodeJob.yml", for: repo) == expected)
+    #expect(try workflow(named: "SwiftWorkflowBuilderXcodeJob.yml", for: repo) == expected)
   }
 
   /// Executes generated setup scripts against mocked Xcode failures and simulator states.
@@ -433,7 +433,7 @@ struct GeneratorTests {
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: directory) }
     let workflowURL = directory.appending(path: "XcodeJob.yml")
-    try workflow(named: "ActionBuilderXcodeJob.yml", for: repo).write(to: workflowURL, atomically: true, encoding: .utf8)
+    try workflow(named: "SwiftWorkflowBuilderXcodeJob.yml", for: repo).write(to: workflowURL, atomically: true, encoding: .utf8)
     let script = try #require(Bundle.module.url(forResource: "workflow-regressions", withExtension: "sh"))
     let outputURL = directory.appending(path: "results.log")
     try Data().write(to: outputURL)

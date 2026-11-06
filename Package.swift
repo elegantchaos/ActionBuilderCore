@@ -56,6 +56,13 @@ let package = Package(
     ),
 
     .testTarget(
+      name: "SwiftCITests",
+      dependencies: [
+        "SwiftCI"
+      ]
+    ),
+
+    .testTarget(
       name: "SwiftWorkflowBuilderTests",
 
       dependencies: [
