@@ -35,6 +35,28 @@ struct GeneratorTests {
       ])
   }
 
+  /// Apple-platform jobs use the `SWIFT_CI_MACOS_RUNNER` variable, except for fork pull
+  /// requests, and fall back to the compiler's hosted image.
+  @Test
+  func appleJobsUseConfiguredMacOSRunner() {
+    let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.iOS, .macOS], compilers: [.swift62])
+    let caller = generator.workflow(for: repo)
+    let expected =
+      #"runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-26' }}""#
+
+    #expect(caller.components(separatedBy: expected).count - 1 == 2)
+  }
+
+  /// Linux jobs always use a hosted runner.
+  @Test
+  func linuxJobsIgnoreConfiguredMacOSRunner() {
+    let repo = Repo(name: "testRepo", owner: "testOwner", platforms: [.linux], compilers: [.swift62])
+    let caller = generator.workflow(for: repo)
+
+    #expect(caller.contains(#"runner: "ubuntu-24.04""#))
+    #expect(!caller.contains("SWIFT_CI_MACOS_RUNNER"))
+  }
+
   /// Workflow names are sanitized before being used as file paths.
   @Test
   func workflowFilenameCannotCreateSubdirectories() {
@@ -100,7 +122,7 @@ struct GeneratorTests {
           uses: ./.github/workflows/SwiftWorkflowBuilderSwiftJob.yml
           with:
             platform: "macOS"
-            runner: "macos-14"
+            runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-14' }}"
             swift-version: "5.10"
             compiler-id: "swift510"
             setup-mode: "release"
@@ -336,7 +358,7 @@ struct GeneratorTests {
       workflow.contains(
         """
         platform: "iOS"
-              runner: "macos-14"
+              runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-14' }}"
               swift-version: "5.10"
               compiler-id: "swift510"
               preferred-xcode-version: "15.4"
@@ -347,7 +369,7 @@ struct GeneratorTests {
       workflow.contains(
         """
         platform: "watchOS"
-              runner: "macos-14"
+              runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-14' }}"
               swift-version: "5.10"
               compiler-id: "swift510"
               preferred-xcode-version: "15.4"

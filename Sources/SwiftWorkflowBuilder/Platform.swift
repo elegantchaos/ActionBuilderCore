@@ -191,16 +191,25 @@ extension Platform {
     return yaml
   }
 
-  /// Returns the runner image used for a compiler on this platform.
+  /// Repository or organisation variable naming a runner to use for macOS-hosted jobs.
+  static let macOSRunnerVariable = "SWIFT_CI_MACOS_RUNNER"
+
+  /// Returns the runner used for a compiler on this platform.
+  ///
+  /// macOS-hosted jobs use the runner named by `macOSRunnerVariable` when it is set, falling
+  /// back to the compiler's hosted image. Pull requests from forks always use the hosted image,
+  /// so outside contributions never run on a repository's own runner.
   fileprivate func runner(for compiler: Compiler) -> String {
     if id == .linux {
       return compiler.linux.hasPrefix("ubuntu-") ? compiler.linux : "ubuntu-24.04"
     }
 
-    switch compiler.mac {
-      case .xcode(_, let image), .toolchain(_, _, let image):
-        return image
-    }
+    let image =
+      switch compiler.mac {
+        case .xcode(_, let image), .toolchain(_, _, let image): image
+      }
+    return
+      "${{ (!github.event.pull_request.head.repo.fork && vars.\(Self.macOSRunnerVariable)) || '\(image)' }}"
   }
 
   /// Returns the reusable Swift workflow setup mode.

@@ -76,7 +76,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "iOS"
-      runner: "macos-26"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-26' }}"
       swift-version: "6.2"
       compiler-id: "swift62"
       preferred-xcode-version: "26.3"
@@ -90,7 +90,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "iOS"
-      runner: "xcode-27"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'xcode-27' }}"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"
@@ -103,7 +103,7 @@ jobs:
     uses: ./.github/workflows/EndToEndSwiftJob.yml
     with:
       platform: "macOS"
-      runner: "macos-26"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-26' }}"
       swift-version: "6.2"
       compiler-id: "swift62"
       setup-mode: "release"
@@ -115,7 +115,7 @@ jobs:
     uses: ./.github/workflows/EndToEndSwiftJob.yml
     with:
       platform: "macOS"
-      runner: "xcode-27"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'xcode-27' }}"
       swift-version: "6.4"
       compiler-id: "swift64"
       setup-mode: "release"
@@ -128,7 +128,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "tvOS"
-      runner: "macos-26"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-26' }}"
       swift-version: "6.2"
       compiler-id: "swift62"
       preferred-xcode-version: "26.3"
@@ -142,7 +142,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "tvOS"
-      runner: "xcode-27"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'xcode-27' }}"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"
@@ -156,7 +156,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "watchOS"
-      runner: "macos-26"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'macos-26' }}"
       swift-version: "6.2"
       compiler-id: "swift62"
       preferred-xcode-version: "26.3"
@@ -170,7 +170,7 @@ jobs:
     with:
       package: "SwiftWorkflowBuilderEndToEnd"
       platform: "watchOS"
-      runner: "xcode-27"
+      runner: "${{ (!github.event.pull_request.head.repo.fork && vars.SWIFT_CI_MACOS_RUNNER) || 'xcode-27' }}"
       swift-version: "6.4"
       compiler-id: "swift64"
       preferred-xcode-version: "27.0"
