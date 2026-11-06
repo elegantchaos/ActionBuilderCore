@@ -63,7 +63,10 @@ public final class Generator {
 
       name: \(YAML.quoted(repo.workflow))
 
-      on: [push, pull_request]
+      on:
+        push:
+          branches: [\(Repo.defaultBranch)]
+        pull_request:
 
       jobs:
       """

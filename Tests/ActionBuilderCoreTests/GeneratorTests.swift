@@ -89,7 +89,10 @@ struct GeneratorTests {
 
       name: "Tests"
 
-      on: [push, pull_request]
+      on:
+        push:
+          branches: [main]
+        pull_request:
 
       jobs:
         macOS-swift510:

@@ -47,7 +47,7 @@ perl -0pi -e '
     s/^(  [A-Za-z0-9_-]+:\n)(    name:)/$1    needs: generated-workflows-current\n$2/mg;
 ' "$GENERATED_CALLER"
 
-GENERATED_JOB_COUNT=$(awk '/^  [A-Za-z0-9_-]+:$/ { count++ } END { print count + 0 }' "$GENERATED_CALLER")
+GENERATED_JOB_COUNT=$(awk '/^jobs:$/ { in_jobs = 1; next } /^[^ ]/ { in_jobs = 0 } in_jobs && /^  [A-Za-z0-9_-]+:$/ { count++ } END { print count + 0 }' "$GENERATED_CALLER")
 DEPENDENT_JOB_COUNT=$(awk '$0 == "    needs: generated-workflows-current" { count++ } END { print count + 0 }' "$GENERATED_CALLER")
 if [[ "$GENERATED_JOB_COUNT" -eq 0 || "$GENERATED_JOB_COUNT" -ne "$DEPENDENT_JOB_COUNT" ]]
 then
