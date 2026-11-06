@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@testable import SwiftCI
+@testable import SwiftWorkflowBuilder
 
 /// Tests parsing of `swift ci` command lines.
 struct InvocationTests {

@@ -6,22 +6,22 @@
 import Foundation
 
 /// A parsed `swift ci` command line.
-struct Invocation {
+public struct Invocation: Sendable {
   /// Subcommands the tool understands.
-  enum Command: String {
+  public enum Command: String, Sendable {
     /// Writes the workflows (and README header) for a package.
     case generate
   }
 
   /// Subcommand to run.
-  let command: Command
+  public let command: Command
   /// Package directory the command acts on.
-  let packageURL: URL
+  public let packageURL: URL
   /// `--` options, wherever they appeared.
-  let options: Set<String>
+  public let options: Set<String>
 
   /// Parses the arguments that follow the executable path.
-  init(arguments: [String], currentDirectory: URL) throws(InvocationError) {
+  public init(arguments: [String], currentDirectory: URL) throws(InvocationError) {
     let positional = arguments.filter { !$0.starts(with: "--") }
     guard let name = positional.first else {
       throw .missingCommand
@@ -44,14 +44,14 @@ struct Invocation {
 }
 
 /// Errors describing an unusable command line.
-enum InvocationError: Error, Equatable {
+public enum InvocationError: Error, Equatable, Sendable {
   case missingCommand
   case unknownCommand(String)
 }
 
 extension InvocationError {
   /// Explanation shown to the user.
-  var message: String {
+  public var message: String {
     switch self {
       case .missingCommand: "No command given."
       case .unknownCommand(let command): "Unknown command '\(command)'."
