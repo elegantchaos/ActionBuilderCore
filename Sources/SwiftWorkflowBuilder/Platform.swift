@@ -21,7 +21,7 @@ public final class Platform: Identifiable, Sendable {
     }
   }
 
-  /// Canonical platform identifiers recognized by ActionBuilder.
+  /// Canonical platform identifiers recognized by SwiftWorkflowBuilder.
   public enum ID: String, Codable, CaseInsensitiveRawRepresentable, Sendable {
     /// macOS, built with Swift Package Manager.
     case macOS

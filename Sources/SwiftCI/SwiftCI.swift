@@ -3,31 +3,45 @@
 //  Copyright © 2026 Elegant Chaos Limited. All rights reserved.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-import ActionBuilderCore
 import Foundation
+import SwiftWorkflowBuilder
 
 #if canImport(AppKit)
   import AppKit
 #endif
 
 /// Command-line entry point that reads package metadata and writes workflow artifacts.
-@main struct ActionBuilderTool {
-  /// Parses command-line options, builds repository settings, then updates workflow/header files.
-  static func main() async throws {
-    let all = ProcessInfo.processInfo.arguments
-    let args = all.filter({ !$0.starts(with: "--") })
-    let options = Set(all.filter({ $0.starts(with: "--") }))
+@main struct SwiftCI {
+  /// Usage text printed for an unusable command line.
+  static let usage = """
+    usage: swift ci generate [<package-path>] [--create-config] [--edit-config] [--reveal-config]
 
-    let url: URL
-    if args.count < 2 {
-      url = URL.currentDirectory()
-    } else {
-      let path = (args[1] as NSString).expandingTildeInPath
-      url = URL(fileURLWithPath: path, isDirectory: true).resolvingSymlinksInPath()
+    Generates GitHub Actions workflows for testing the Swift package at <package-path>
+    (default: the current directory).
+    """
+
+  /// Parses the command line, then runs the requested command.
+  static func main() async throws {
+    let invocation: Invocation
+    do {
+      invocation = try Invocation(
+        arguments: Array(CommandLine.arguments.dropFirst()),
+        currentDirectory: URL.currentDirectory()
+      )
+    } catch {
+      FileHandle.standardError.write(Data("\(error.message)\n\n\(usage)\n".utf8))
+      exit(EX_USAGE)
     }
 
-    let calledFromPlugin = options.contains("--called-from-plugin")
-    let repo = try await Repo(forPackage: url, calledFromPlugin: calledFromPlugin)
+    switch invocation.command {
+      case .generate:
+        try await generate(for: invocation.packageURL, options: invocation.options)
+    }
+  }
+
+  /// Builds repository settings, then updates workflow/header files.
+  static func generate(for url: URL, options: Set<String>) async throws {
+    let repo = try await Repo(forPackage: url)
 
     if options.contains("--create-config") {
       makeSettings(for: repo, at: url)
@@ -42,9 +56,9 @@ import Foundation
     }
 
     let generator = Generator(
-      name: "ActionBuilderTool",
+      name: "SwiftWorkflowBuilder",
       version: VersionatorVersion.full,
-      link: "https://github.com/elegantchaos/ActionBuilderCore"
+      link: "https://github.com/elegantchaos/SwiftWorkflowBuilder"
     )
 
     try updateWorkflows(for: repo, at: url, with: generator)
@@ -69,18 +83,13 @@ import Foundation
 
   /// Inserts or replaces the generated README header block.
   static func updateHeader(for repo: Repo, at url: URL, with generator: Generator) throws {
-    let (header, delimiter) = generator.header(for: repo)
-
     let readmeURL = url.appendingPathComponent("README.md")
-    var readme = try String(contentsOf: readmeURL, encoding: .utf8)
-    if let range = readme.range(of: delimiter) {
-      readme.removeSubrange(readme.startIndex..<range.upperBound)
-    }
-    readme.insert(contentsOf: header, at: readme.startIndex)
-    try readme.write(to: readmeURL, atomically: true, encoding: .utf8)
+    let readme = try String(contentsOf: readmeURL, encoding: .utf8)
+    try generator.readme(byUpdatingHeaderIn: readme, for: repo)
+      .write(to: readmeURL, atomically: true, encoding: .utf8)
   }
 
-  /// Creates a default `.actionbuilder.json` file when one does not exist.
+  /// Creates a default `.swift-ci.json` file when one does not exist.
   static func makeSettings(for repo: Repo, at url: URL) {
     let settingsURL = Repo.settingsURL(forPackage: url)
     if !FileManager.default.fileExists(atPath: settingsURL.path) {

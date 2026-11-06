@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@testable import ActionBuilderCore
+@testable import SwiftWorkflowBuilder
 
 /// Tests repository configuration inferred from package metadata and settings.
 struct RepoTests {
@@ -60,7 +60,34 @@ struct RepoTests {
     #expect(repo.firstlast == false)
   }
 
-  /// Future tools versions collapse to the latest compiler known by ActionBuilder.
+  /// The settings file is `.swift-ci.json` when a package has no settings yet.
+  @Test
+  func settingsURLDefaultsToCurrentName() throws {
+    let package = try makeTemporaryPackageDirectory(containing: [])
+    defer { try? FileManager.default.removeItem(at: package) }
+
+    #expect(Repo.settingsURL(forPackage: package).lastPathComponent == ".swift-ci.json")
+  }
+
+  /// Packages that only have the legacy settings file keep using it.
+  @Test
+  func settingsURLFallsBackToLegacyName() throws {
+    let package = try makeTemporaryPackageDirectory(containing: [".actionbuilder.json"])
+    defer { try? FileManager.default.removeItem(at: package) }
+
+    #expect(Repo.settingsURL(forPackage: package).lastPathComponent == ".actionbuilder.json")
+  }
+
+  /// The current settings file wins when both names are present.
+  @Test
+  func settingsURLPrefersCurrentName() throws {
+    let package = try makeTemporaryPackageDirectory(containing: [".swift-ci.json", ".actionbuilder.json"])
+    defer { try? FileManager.default.removeItem(at: package) }
+
+    #expect(Repo.settingsURL(forPackage: package).lastPathComponent == ".swift-ci.json")
+  }
+
+  /// Future tools versions collapse to the latest compiler known by SwiftWorkflowBuilder.
   @Test
   func futureToolsVersionMapsToLatestCompiler() async throws {
     let examplePackage = try #require(
@@ -142,5 +169,16 @@ struct RepoTests {
     )
 
     #expect(Set(repo.enabledCompilers.map(\.id)) == [.earliestRelease, .latestRelease])
+  }
+
+  /// Creates an empty package directory holding the named files.
+  private func makeTemporaryPackageDirectory(containing files: [String]) throws -> URL {
+    let directory = FileManager.default.temporaryDirectory
+      .appending(path: "RepoTests-\(UUID().uuidString)", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    for file in files {
+      try Data("{}".utf8).write(to: directory.appending(path: file))
+    }
+    return directory
   }
 }

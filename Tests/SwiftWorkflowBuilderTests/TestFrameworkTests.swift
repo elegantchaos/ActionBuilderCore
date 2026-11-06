@@ -5,7 +5,7 @@
 
 import Testing
 
-@testable import ActionBuilderCore
+@testable import SwiftWorkflowBuilder
 
 /// Tests source-level test-framework import detection.
 struct TestFrameworkTests {

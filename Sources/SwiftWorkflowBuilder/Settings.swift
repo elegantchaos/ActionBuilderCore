@@ -6,7 +6,7 @@
 import Foundation
 
 /// Settings for the generation process.
-/// Can be read from the `.actionbuilder.json` file in the root of a package directory.
+/// Read from the `.swift-ci.json` file (or a legacy `.actionbuilder.json`) in the root of a package directory.
 public struct Settings: Codable {
   /// Optional repository name override.
   public var name: String?

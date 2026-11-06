@@ -8,10 +8,10 @@ import Foundation
 /// Generates GitHub workflow files and optional README headers for a repository.
 public final class Generator {
   /// Repository-relative path for the generated Swift reusable workflow.
-  static let swiftJobPath = ".github/workflows/ActionBuilderSwiftJob.yml"
+  static let swiftJobPath = ".github/workflows/SwiftWorkflowBuilderSwiftJob.yml"
 
   /// Repository-relative path for the generated Xcode reusable workflow.
-  static let xcodeJobPath = ".github/workflows/ActionBuilderXcodeJob.yml"
+  static let xcodeJobPath = ".github/workflows/SwiftWorkflowBuilderXcodeJob.yml"
 
   /// Name of the generating tool.
   let name: String
@@ -98,6 +98,22 @@ public final class Generator {
       .joined()
     return filename.isEmpty ? Repo.defaultWorkflow : filename
   }
+
+  /// Returns `readme` with its generated header inserted or replaced.
+  public func readme(byUpdatingHeaderIn readme: String, for repo: Repo) -> String {
+    let (header, delimiter) = header(for: repo)
+    var body = readme
+    for existingDelimiter in [delimiter] + Self.legacyHeaderDelimiters {
+      if let range = body.range(of: existingDelimiter) {
+        body.removeSubrange(body.startIndex..<range.upperBound)
+        break
+      }
+    }
+    return header + body
+  }
+
+  /// Delimiters that closed headers written before the tool was renamed.
+  static let legacyHeaderDelimiters = ["<!-- End of ActionBuilderTool Header -->\n\n"]
 
   /// Generates text to use for a README.md header for the given repo.
   public func header(for repo: Repo) -> (String, String) {

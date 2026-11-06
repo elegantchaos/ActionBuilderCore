@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCore_ActionBuilderCoreTests"
-               BuildableName = "ActionBuilderCore_ActionBuilderCoreTests"
-               BlueprintName = "ActionBuilderCore_ActionBuilderCoreTests"
+               BlueprintIdentifier = "SwiftWorkflowBuilder_SwiftWorkflowBuilderTests"
+               BuildableName = "SwiftWorkflowBuilder_SwiftWorkflowBuilderTests"
+               BlueprintName = "SwiftWorkflowBuilder_SwiftWorkflowBuilderTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,9 +28,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCore"
-               BuildableName = "ActionBuilderCore"
-               BlueprintName = "ActionBuilderCore"
+               BlueprintIdentifier = "SwiftWorkflowBuilder"
+               BuildableName = "SwiftWorkflowBuilder"
+               BlueprintName = "SwiftWorkflowBuilder"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -42,9 +42,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderTool"
-               BuildableName = "ActionBuilderTool"
-               BlueprintName = "ActionBuilderTool"
+               BlueprintIdentifier = "swift-ci"
+               BuildableName = "swift-ci"
+               BlueprintName = "swift-ci"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -56,9 +56,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCoreTests"
-               BuildableName = "ActionBuilderCoreTests"
-               BlueprintName = "ActionBuilderCoreTests"
+               BlueprintIdentifier = "SwiftWorkflowBuilderTests"
+               BuildableName = "SwiftWorkflowBuilderTests"
+               BlueprintName = "SwiftWorkflowBuilderTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -74,9 +74,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCoreTests"
-               BuildableName = "ActionBuilderCoreTests"
-               BlueprintName = "ActionBuilderCoreTests"
+               BlueprintIdentifier = "SwiftWorkflowBuilderTests"
+               BuildableName = "SwiftWorkflowBuilderTests"
+               BlueprintName = "SwiftWorkflowBuilderTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -95,9 +95,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ActionBuilderTool"
-            BuildableName = "ActionBuilderTool"
-            BlueprintName = "ActionBuilderTool"
+            BlueprintIdentifier = "swift-ci"
+            BuildableName = "swift-ci"
+            BlueprintName = "swift-ci"
             ReferencedContainer = "container:">
          </BuildableReference>
       </MacroExpansion>
@@ -111,9 +111,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ActionBuilderTool"
-            BuildableName = "ActionBuilderTool"
-            BlueprintName = "ActionBuilderTool"
+            BlueprintIdentifier = "swift-ci"
+            BuildableName = "swift-ci"
+            BlueprintName = "swift-ci"
             ReferencedContainer = "container:">
          </BuildableReference>
       </MacroExpansion>

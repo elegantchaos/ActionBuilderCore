@@ -3,7 +3,7 @@
 # (see https://test.com for more details)
 # --------------------------------------------------------------------------------
 
-name: ActionBuilder Xcode Job
+name: SwiftWorkflowBuilder Xcode Job
 
 on:
   workflow_call:

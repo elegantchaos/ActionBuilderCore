@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderTool"
-               BuildableName = "ActionBuilderTool"
-               BlueprintName = "ActionBuilderTool"
+               BlueprintIdentifier = "SwiftWorkflowBuilder"
+               BuildableName = "SwiftWorkflowBuilder"
+               BlueprintName = "SwiftWorkflowBuilder"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,9 +28,23 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCoreTests"
-               BuildableName = "ActionBuilderCoreTests"
-               BlueprintName = "ActionBuilderCoreTests"
+               BlueprintIdentifier = "SwiftWorkflowBuilderTests"
+               BuildableName = "SwiftWorkflowBuilderTests"
+               BlueprintName = "SwiftWorkflowBuilderTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ActionBuilderPlugin"
+               BuildableName = "ActionBuilderPlugin"
+               BlueprintName = "ActionBuilderPlugin"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -40,15 +54,31 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES">
+      shouldUseLaunchSchemeArgsEnv = "NO">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "SwiftWorkflowBuilder"
+            BuildableName = "SwiftWorkflowBuilder"
+            BlueprintName = "SwiftWorkflowBuilder"
+            ReferencedContainer = "container:">
+         </BuildableReference>
+      </MacroExpansion>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "TEST_PACKAGE"
+            value = "~/Developer/Projects/SwiftWorkflowBuilder"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
       <Testables>
          <TestableReference
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ActionBuilderCoreTests"
-               BuildableName = "ActionBuilderCoreTests"
-               BlueprintName = "ActionBuilderCoreTests"
+               BlueprintIdentifier = "SwiftWorkflowBuilderTests"
+               BuildableName = "SwiftWorkflowBuilderTests"
+               BlueprintName = "SwiftWorkflowBuilderTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -59,28 +89,11 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "~/Developer/Projects/ActionBuilderCore"
+      useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ActionBuilderTool"
-            BuildableName = "ActionBuilderTool"
-            BlueprintName = "ActionBuilderTool"
-            ReferencedContainer = "container:">
-         </BuildableReference>
-      </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "./"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -88,16 +101,15 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ActionBuilderTool"
-            BuildableName = "ActionBuilderTool"
-            BlueprintName = "ActionBuilderTool"
+            BlueprintIdentifier = "SwiftWorkflowBuilder"
+            BuildableName = "SwiftWorkflowBuilder"
+            BlueprintName = "SwiftWorkflowBuilder"
             ReferencedContainer = "container:">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

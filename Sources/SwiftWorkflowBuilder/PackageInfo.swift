@@ -28,39 +28,9 @@ struct PackageInfo: Decodable {
   }
 
   /// Reads package metadata and detects test-framework imports.
-  init(from url: URL, useIsolatedScratchPath: Bool = false) async throws {
-    let scratchPath: URL?
-    if useIsolatedScratchPath {
-      // Nested SwiftPM invocations (plugin -> tool -> dump-package) can contend on `index.lock`.
-      // Using a unique scratch path for the inner invocation avoids that deadlock.
-      // In plugin mode this must live inside the package directory, because command
-      // plugins are only allowed to write there.
-      let path =
-        url
-        .appendingPathComponent(".build", isDirectory: true)
-        .appendingPathComponent("actionbuildercore-swiftpm-\(UUID().uuidString)", isDirectory: true)
-      try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
-      scratchPath = path
-    } else {
-      scratchPath = nil
-    }
-    defer {
-      if let scratchPath {
-        try? FileManager.default.removeItem(at: scratchPath)
-      }
-    }
-
+  init(from url: URL) async throws {
     let spm = Runner(command: "swift", cwd: url)
-    let arguments =
-      if let scratchPath {
-        [
-          "package", "--disable-sandbox", "--scratch-path", scratchPath.path, "describe", "--type",
-          "json",
-        ]
-      } else {
-        ["package", "--disable-sandbox", "describe", "--type", "json"]
-      }
-    let output = spm.run(arguments)
+    let output = spm.run(["package", "--disable-sandbox", "describe", "--type", "json"])
     try await output.throwIfFailed(
       Error.launchingSwiftFailed(url, await output.stderr.string)
     )

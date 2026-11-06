@@ -9,7 +9,7 @@ extension Generator {
     var source =
       reusableWorkflowHeader()
         + """
-        name: ActionBuilder Swift Job
+        name: SwiftWorkflowBuilder Swift Job
 
         on:
           workflow_call:
@@ -84,7 +84,7 @@ extension Generator {
     var source =
       reusableWorkflowHeader()
         + """
-        name: ActionBuilder Xcode Job
+        name: SwiftWorkflowBuilder Xcode Job
 
         on:
           workflow_call:

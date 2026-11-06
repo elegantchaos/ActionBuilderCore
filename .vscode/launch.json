@@ -3,26 +3,26 @@
     {
       "type": "swift",
       "request": "launch",
-      "args": ["${workspaceFolder}/../Versionator"],
+      "args": ["generate", "${workspaceFolder}/../Versionator"],
       "name": "Debug with Versionator",
-      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
-      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+      "program": "${workspaceFolder:SwiftWorkflowBuilder}/.build/debug/swift-ci",
+      "preLaunchTask": "swift: Build Debug swift-ci"
     },
     {
       "type": "swift",
       "request": "launch",
-      "args": ["${workspaceFolder}/../ActionBuilderPlugin"],
+      "args": ["generate", "${workspaceFolder}/../ActionBuilderPlugin"],
       "name": "Debug with ActionBuilderPlugin",
-      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
-      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+      "program": "${workspaceFolder:SwiftWorkflowBuilder}/.build/debug/swift-ci",
+      "preLaunchTask": "swift: Build Debug swift-ci"
     },
     {
       "type": "swift",
       "request": "launch",
-      "args": ["${workspaceFolder}/../Logger"],
+      "args": ["generate", "${workspaceFolder}/../Logger"],
       "name": "Debug with Logger",
-      "program": "${workspaceFolder:ActionBuilderCore}/.build/debug/ActionBuilderTool",
-      "preLaunchTask": "swift: Build Debug ActionBuilderTool"
+      "program": "${workspaceFolder:SwiftWorkflowBuilder}/.build/debug/swift-ci",
+      "preLaunchTask": "swift: Build Debug swift-ci"
     }
   ]
 }
