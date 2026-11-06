@@ -57,7 +57,7 @@ import SwiftWorkflowBuilder
 
     let generator = Generator(
       name: "SwiftWorkflowBuilder",
-      version: VersionatorVersion.full,
+      version: VersionatorVersion.string,
       link: "https://github.com/elegantchaos/SwiftWorkflowBuilder"
     )
 
