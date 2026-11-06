@@ -4,7 +4,7 @@
 - Prefer maintained GitHub Actions setup actions over custom shell installation steps when they provide equivalent behavior.
 - Keep generated workflow output deterministic and make changes to external action references deliberate.
 - Before creating a pull request, run `Extras/Scripts/refresh-endtoend.sh` and include any regenerated EndToEnd workflow changes, because the pull request's own CI checks them.
-- The generated EndToEnd workflows carry a fixed artificial stamp (`ActionBuilderTool 0.0.0.`) in place of the real version and build number, so tagging a release or committing a refresh does not make them stale and a release needs no refresh. A stamp that is missing or has no version still fails the freshness check.
+- Keep a development journal in `Extras/Journal/`.
 - Keep a decision log in `Extras/Decisions/`.
 
 # Standard Rules
@@ -19,7 +19,7 @@
 
 - Follow the `baseline:standards` skill for all coding.
 - Use the `baseline:review` skill for reviewing pull requests and completed work.
-- Use the `baseline:records` skill for the decision log.
+- Use the `baseline:records` skill for the development journal and decision log.
 - Use the `baseline:git` skill for git and GitHub operations.
 - Use the `swift:language` skill for all Swift code.
 - Also use the `swift:testing` skill for Swift Testing work.
