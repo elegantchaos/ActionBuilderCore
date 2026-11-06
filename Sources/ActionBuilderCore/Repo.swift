@@ -11,6 +11,8 @@ public struct Repo: Equatable, Sendable {
   public static let defaultOwner = "Unknown"
   /// Default workflow file and display name.
   public static let defaultWorkflow = "Tests"
+  /// Branch whose pushes trigger the caller workflow; other branches are tested through pull requests.
+  public static let defaultBranch = "main"
   /// Default test mode behavior.
   public static let defaultTest = TestMode.auto
   /// Default strategy to run only first and last requested compilers.
